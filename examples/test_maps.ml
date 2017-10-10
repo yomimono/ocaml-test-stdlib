@@ -1,25 +1,30 @@
-module IntMap = Map.Make(struct type t = int let compare x y = x-y end)
+module type Generable = sig
+  include Map.OrderedType
+  val generate : t Crowbar.gen
+end
 
-let show m = IntMap.iter (fun k v -> Printf.printf "%d -> %d\n" k v) m
+module StringGen = struct
+  include String
+  let generate = Crowbar.bytes
+end
 
-let update x f m =
-  let yp = IntMap.find_opt x m in
-  let y = f yp in
-  match yp, y with
-  | _, None -> IntMap.remove x m
-  | None, Some z -> IntMap.add x z m
-  | Some zp, Some z -> if zp == z then m else IntMap.add x z m
+module IntGen = struct
+  type t = int
+  let compare p q = p - q
+  let generate = Crowbar.int
+end
 
-let map_gen n =
-  let rec init m = function
-    | -1 -> m
-    | n -> init (IntMap.add n n m) (n - 1)
-  in
-  init IntMap.empty n
+let key_module : (module Generable) Crowbar.gen =
+  Crowbar.(Choose [
+      Const (module IntGen);
+      Const (module StringGen);
+    ])
 
-let check n =
-  let map = map_gen n in
-  Crowbar.check ((=) 0 @@ compare (IntMap.cardinal map) n)
+let check_empty g =
+  let module G = (val g : Generable) in
+  let module M = Map.Make(G) in
+  Crowbar.check @@ M.is_empty M.empty
 
 let () =
-  Crowbar.add_test ~name:"init" Crowbar.[int] @@ fun n -> check n
+  Crowbar.add_test ~name:"empty maps are empty"
+    Crowbar.[key_module] check_empty
