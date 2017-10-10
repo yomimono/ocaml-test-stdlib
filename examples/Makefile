@@ -1,4 +1,4 @@
-TESTS = calendar pprint map fpath join
+TESTS = maps
 PKG_calendar = calendar
 PKG_pprint = pprint,str
 PKG_xmldiff = xmldiff

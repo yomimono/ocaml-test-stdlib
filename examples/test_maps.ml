@@ -1,30 +1,43 @@
-module type Generable = sig
-  include Map.OrderedType
-  val generate : t Crowbar.gen
-end
-
-module StringGen = struct
-  include String
-  let generate = Crowbar.bytes
-end
-
-module IntGen = struct
+module Map = Map.Make (struct
   type t = int
-  let compare p q = p - q
-  let generate = Crowbar.int
-end
+  let compare (i : int) (j : int) = compare i j
+end)
 
-let key_module : (module Generable) Crowbar.gen =
-  Crowbar.(Choose [
-      Const (module IntGen);
-      Const (module StringGen);
-    ])
+let int_pair = Crowbar.(Map ([int; int], fun x y -> x, y))
 
-let check_empty g =
-  let module G = (val g : Generable) in
-  let module M = Map.Make(G) in
-  Crowbar.check @@ M.is_empty M.empty
+let map = Crowbar.(Choose [
+    Const Map.empty;
+    Map ([int; int], fun x y -> Map.singleton x y);
+    Map ([List int_pair], fun items ->
+        List.fold_left (fun m (x, y) -> Map.add x y m) Map.empty items);
+    
+  ])
+
+let check_bounds map =
+  Crowbar.check @@ try
+    match Map.min_binding map, Map.max_binding map with
+    | (min, _) , (max, _) when compare max min = 1 -> true
+    | (min, _) , (max, _) when compare max min = -1 -> false
+    | (min, _) , (max, _) ->
+      Map.for_all (fun k _ -> compare k min = 0) map
+  with
+  | Not_found -> 0 = Map.cardinal map
+
+let nondestructive_binding map (k, v) =
+  Crowbar.check @@
+  try
+    match Map.mem k map with
+    | false ->
+      0 = v - (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
+    | true ->
+      let v' = Map.find k map in
+      0 = v' - (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
+  with
+  | Not_found -> false
+  
 
 let () =
-  Crowbar.add_test ~name:"empty maps are empty"
-    Crowbar.[key_module] check_empty
+  Crowbar.add_test ~name:"max_binding = min_binding implies all elements are equal"
+    Crowbar.[map] check_bounds;
+  Crowbar.add_test ~name:"non-destructive updates never shadow existing bindings"
+    Crowbar.[map; int_pair] nondestructive_binding;
