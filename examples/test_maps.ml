@@ -5,11 +5,13 @@ module type GENERATOR = sig
   val val_gen : value Crowbar.gen
 end
 
-module Map_tester(Map : Map.S)(G: GENERATOR with type key = Map.key) = struct
+module Map_tester(Ordered: Map.OrderedType)
+   (G: GENERATOR with type key = Ordered.t and type value = Ordered.t) = struct
 
-  include G
+  module Map = Map.Make(Ordered)
 
-  let pair = Crowbar.(Map ([G.key_gen; G.val_gen], fun x y -> x, y))
+  let pair : (G.key * G.value) Crowbar.gen 
+    = Crowbar.(Map ([G.key_gen; G.val_gen], fun x y -> x, y))
 
   let map =
     Crowbar.(Choose [
@@ -30,14 +32,15 @@ module Map_tester(Map : Map.S)(G: GENERATOR with type key = Map.key) = struct
     | Not_found -> 0 = Map.cardinal map
 
   let nondestructive_binding map (k, v) =
-    Crowbar.check @@
-    try
+    Crowbar.check @@ try
       match Map.mem k map with
       | false -> (* inserting should always get us the element *)
-        0 = v - (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
+        0 = Ordered.compare v
+          (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
       | true -> (* inserting should always return the previous value *)
         let v' = Map.find k map in
-        0 = v' - (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
+        0 = Ordered.compare v'
+          (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
     with
     | Not_found -> false
 
@@ -45,7 +48,7 @@ module Map_tester(Map : Map.S)(G: GENERATOR with type key = Map.key) = struct
     Crowbar.check @@
     try
       (* inserting should always get us the element *)
-      0 = v - (Map.find k @@ Map.update k (fun _ -> Some v) map)
+      0 = Ordered.compare v (Map.find k @@ Map.update k (fun _ -> Some v) map)
     with
     | Not_found -> false
 
@@ -56,7 +59,7 @@ module Map_tester(Map : Map.S)(G: GENERATOR with type key = Map.key) = struct
     in
     match Map.mem k map with
     | true ->
-      0 = v - (Map.find k @@ replace k v map)
+      0 = Ordered.compare v (Map.find k @@ replace k v map)
     | false ->
       0 = compare None (Map.find_opt k @@ replace k v map)
 
@@ -69,32 +72,41 @@ module Map_tester(Map : Map.S)(G: GENERATOR with type key = Map.key) = struct
     in
     match Map.mem k map with
     | false -> (* our new binding should be there after transformation *)
-      0 = v - (Map.find k @@ transform k v map)
+      0 = Ordered.compare v (Map.find k @@ transform k v map)
     | true -> 
       0 = compare None (Map.find_opt k @@ transform k v map)
 
+  let add_tests () =
+    Crowbar.add_test ~name:"max_binding = min_binding implies all elements are equal"
+      Crowbar.[map] check_bounds;
+    Crowbar.add_test ~name:"destructive updates always shadow existing bindings"
+      Crowbar.[map; pair] destructive_binding;
+    Crowbar.add_test ~name:"non-destructive updates never shadow existing bindings"
+      Crowbar.[map; pair] nondestructive_binding;
+    Crowbar.add_test ~name:"replacing does not create new bindings"
+      Crowbar.[map; pair] replace;
+    Crowbar.add_test ~name:"delete-if-present transformation works"
+      Crowbar.[map; pair] delete_extant_bind_new;
+
 end
 
-module IntMap = Map.Make (struct
+module OrdInt = struct
   type t = int
   let compare (i : int) (j : int) = compare i j
-end)
+end
 module IntGen = struct
   type key = int
   type value = int
   let key_gen, val_gen = Crowbar.int, Crowbar.int
 end
-module IntTester = Map_tester(IntMap)(IntGen)
+module IntTester = Map_tester(OrdInt)(IntGen)
+module StringGen = struct
+  type key = string
+  type value = string
+  let key_gen, val_gen = Crowbar.bytes, Crowbar.bytes
+end
+module StringTester = Map_tester(String)(StringGen)
 
 let () =
-  let module Tester = IntTester in
-  Crowbar.add_test ~name:"max_binding = min_binding implies all elements are equal"
-    Crowbar.[Tester.map] Tester.check_bounds;
-  Crowbar.add_test ~name:"non-destructive updates never shadow existing bindings"
-    Crowbar.[Tester.map; Tester.pair] Tester.nondestructive_binding;
-  Crowbar.add_test ~name:"destructive updates always shadow existing bindings"
-    Crowbar.[Tester.map; Tester.pair] Tester.destructive_binding;
-  Crowbar.add_test ~name:"replacing does not create new bindings"
-    Crowbar.[Tester.map; Tester.pair] Tester.replace;
-  Crowbar.add_test ~name:"delete-if-present transformation works"
-    Crowbar.[Tester.map; Tester.pair] Tester.delete_extant_bind_new;
+  StringTester.add_tests ();
+  IntTester.add_tests ();
