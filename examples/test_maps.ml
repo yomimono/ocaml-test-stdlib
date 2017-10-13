@@ -43,9 +43,9 @@ let destructive_binding map (k, v) =
   | Not_found -> false
 
 let () =
-  Crowbar.add_test ~name:"max_binding = min_binding implies all elements are equal"
+  (* Crowbar.add_test ~name:"max_binding = min_binding implies all elements are equal"
     Crowbar.[map] check_bounds;
   Crowbar.add_test ~name:"non-destructive updates never shadow existing bindings"
-    Crowbar.[map; int_pair] nondestructive_binding;
+    Crowbar.[map; int_pair] nondestructive_binding; *)
   Crowbar.add_test ~name:"destructive updates always shadow existing bindings"
-    Crowbar.[map; int_pair] nondestructive_binding;
+    Crowbar.[map; int_pair] destructive_binding;
