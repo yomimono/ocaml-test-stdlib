@@ -7,10 +7,9 @@ let int_pair = Crowbar.(Map ([int; int], fun x y -> x, y))
 
 let map = Crowbar.(Choose [
     Const Map.empty;
-    Map ([int; int], fun x y -> Map.singleton x y);
+    Map ([int_pair], fun (x, y) -> Map.singleton x y);
     Map ([List int_pair], fun items ->
         List.fold_left (fun m (x, y) -> Map.add x y m) Map.empty items);
-    
   ])
 
 let check_bounds map =
@@ -27,17 +26,26 @@ let nondestructive_binding map (k, v) =
   Crowbar.check @@
   try
     match Map.mem k map with
-    | false ->
+    | false -> (* inserting should always get us the element *)
       0 = v - (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
-    | true ->
+    | true -> (* inserting should always return the previous value *)
       let v' = Map.find k map in
       0 = v' - (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
   with
   | Not_found -> false
-  
+
+let destructive_binding map (k, v) =
+  Crowbar.check @@
+  try
+    (* inserting should always get us the element *)
+    0 = v - (Map.find k @@ Map.update k (fun _ -> Some v) map)
+  with
+  | Not_found -> false
 
 let () =
   Crowbar.add_test ~name:"max_binding = min_binding implies all elements are equal"
     Crowbar.[map] check_bounds;
   Crowbar.add_test ~name:"non-destructive updates never shadow existing bindings"
+    Crowbar.[map; int_pair] nondestructive_binding;
+  Crowbar.add_test ~name:"destructive updates always shadow existing bindings"
     Crowbar.[map; int_pair] nondestructive_binding;
