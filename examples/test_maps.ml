@@ -6,7 +6,7 @@ module type GENERATOR = sig
 end
 
 module Map_tester(Ordered: Map.OrderedType)
-   (G: GENERATOR with type key = Ordered.t and type value = Ordered.t) = struct
+    (G: GENERATOR with type key = Ordered.t and type value = Ordered.t) = struct
 
   module Map = Map.Make(Ordered)
 
@@ -15,11 +15,11 @@ module Map_tester(Ordered: Map.OrderedType)
 
   let map =
     Crowbar.(Choose [
-      Const Map.empty;
-      Map ([G.key_gen; G.val_gen], Map.singleton);
-      Map ([List pair], fun items ->
-          List.fold_left (fun m (x, y) -> Map.add x y m) Map.empty items);
-    ])
+        Const Map.empty;
+        Map ([G.key_gen; G.val_gen], Map.singleton);
+        Map ([List pair], fun items ->
+            List.fold_left (fun m (x, y) -> Map.add x y m) Map.empty items);
+      ])
 
   let check_bounds map =
     Crowbar.check @@ try
@@ -31,62 +31,90 @@ module Map_tester(Ordered: Map.OrderedType)
     with
     | Not_found -> 0 = Map.cardinal map
 
-  let nondestructive_binding map (k, v) =
-    Crowbar.check @@ try
+  module Update = struct
+
+    let nondestructive_binding map (k, v) =
+      Crowbar.check @@ try
+        match Map.mem k map with
+        | false -> (* inserting should always get us the element *)
+          0 = Ordered.compare v
+            (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
+        | true -> (* inserting should always return the previous value *)
+          let v' = Map.find k map in
+          0 = Ordered.compare v'
+            (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
+      with
+      | Not_found -> false
+
+    let destructive_binding map (k, v) =
+      Crowbar.check @@
+      try
+        (* inserting should always get us the element *)
+        0 = Ordered.compare v (Map.find k @@ Map.update k (fun _ -> Some v) map)
+      with
+      | Not_found -> false
+
+    let replace map (k, v) =
+      Crowbar.check @@
+      let replace k v map =
+        Map.update k (function None -> None | Some _ -> Some v) map
+      in
       match Map.mem k map with
-      | false -> (* inserting should always get us the element *)
-        0 = Ordered.compare v
-          (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
-      | true -> (* inserting should always return the previous value *)
-        let v' = Map.find k map in
-        0 = Ordered.compare v'
-          (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
-    with
-    | Not_found -> false
+      | true ->
+        0 = Ordered.compare v (Map.find k @@ replace k v map)
+      | false ->
+        0 = compare None (Map.find_opt k @@ replace k v map)
 
-  let destructive_binding map (k, v) =
-    Crowbar.check @@
-    try
-      (* inserting should always get us the element *)
-      0 = Ordered.compare v (Map.find k @@ Map.update k (fun _ -> Some v) map)
-    with
-    | Not_found -> false
+    (* I don't know why this is important, but it's in the unit tests, so let's
+       include it *)
+    let delete_extant_bind_new map (k, v) =
+      Crowbar.check @@
+      let transform k v map = Map.update k (function None -> Some v | Some _ ->
+          None) map
+      in
+      match Map.mem k map with
+      | false -> (* our new binding should be there after transformation *)
+        0 = Ordered.compare v (Map.find k @@ transform k v map)
+      | true -> 
+        0 = compare None (Map.find_opt k @@ transform k v map)
+  end
 
-  let replace map (k, v) =
-    Crowbar.check @@
-    let replace k v map =
-      Map.update k (function None -> None | Some _ -> Some v) map
-    in
-    match Map.mem k map with
-    | true ->
-      0 = Ordered.compare v (Map.find k @@ replace k v map)
-    | false ->
-      0 = compare None (Map.find_opt k @@ replace k v map)
+  module Union = struct
 
-  (* I don't know why this is important, but it's in the unit tests, so let's
-     include it *)
-  let delete_extant_bind_new map (k, v) =
-    Crowbar.check @@
-    let transform k v map = Map.update k (function None -> Some v | Some _ ->
-        None) map
-    in
-    match Map.mem k map with
-    | false -> (* our new binding should be there after transformation *)
-      0 = Ordered.compare v (Map.find k @@ transform k v map)
-    | true -> 
-      0 = compare None (Map.find_opt k @@ transform k v map)
+    let union_largest m1 m2 =
+      let largest val1 val2 =
+        match Ordered.compare val1 val2 with
+        | x when x < 0 -> Some val2
+        | 0 -> Some val2
+        | _ -> Some val1
+      in
+      let unioned = Map.union (fun _key val1 val2 -> largest val1 val2) m1 m2 in
+      let merged = Map.merge (fun _key x y -> match x, y with
+          | None, None -> None
+          | Some v, None | None, Some v -> Some v
+          | Some x, Some y -> largest x y) m1 m2
+      in
+      Crowbar.check @@ Map.equal (fun x y -> 0 = Ordered.compare x y) merged unioned
+  end
+
 
   let add_tests () =
     Crowbar.add_test ~name:"max_binding = min_binding implies all elements are equal"
       Crowbar.[map] check_bounds;
-    Crowbar.add_test ~name:"destructive updates always shadow existing bindings"
-      Crowbar.[map; pair] destructive_binding;
-    Crowbar.add_test ~name:"non-destructive updates never shadow existing bindings"
-      Crowbar.[map; pair] nondestructive_binding;
-    Crowbar.add_test ~name:"replacing does not create new bindings"
-      Crowbar.[map; pair] replace;
-    Crowbar.add_test ~name:"delete-if-present transformation works"
-      Crowbar.[map; pair] delete_extant_bind_new;
+    Update.(
+      Crowbar.add_test ~name:"destructive updates always shadow existing bindings"
+        Crowbar.[map; pair] destructive_binding;
+      Crowbar.add_test ~name:"non-destructive updates never shadow existing bindings"
+        Crowbar.[map; pair] nondestructive_binding;
+      Crowbar.add_test ~name:"replacing does not create new bindings"
+        Crowbar.[map; pair] replace;
+      Crowbar.add_test ~name:"delete-if-present transformation works"
+        Crowbar.[map; pair] delete_extant_bind_new;
+    );
+    Union.(
+      Crowbar.add_test ~name:"Map.union is special case of Map.merge as claimed"
+        Crowbar.[map; map] union_largest
+    );
 
 end
 
