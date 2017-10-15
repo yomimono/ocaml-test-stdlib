@@ -57,6 +57,14 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
 
     let check_filter m =
       Crowbar.check (Map.filter (fun _ _ -> true) m == m)
+
+    let check_choose m =
+      let also_m = m in
+      Crowbar.check @@
+      match Map.choose m, Map.choose also_m with
+      | (k1, v1), (k2, v2) -> (0 = KeyOrder.compare k1 k2 &&
+                               0 = ValueOrder.compare v1 v2)
+      | exception Not_found -> Crowbar.bad_test ()
   
   end
 
@@ -129,6 +137,8 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
                             equality" Crowbar.[map; G.key_gen] check_remove;
     Crowbar.add_test ~name:"filtering which keeps all elements retains physical \
                             equality" Crowbar.[map] check_filter;
+    Crowbar.add_test ~name:"choose gets the same binding for same maps"
+      Crowbar.[map] check_choose;
     );
     Update.(
       Crowbar.add_test ~name:"destructive updates always shadow existing bindings"
