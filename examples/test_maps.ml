@@ -5,31 +5,60 @@ module type GENERATOR = sig
   val val_gen : value Crowbar.gen
 end
 
-module Map_tester(Ordered: Map.OrderedType)
-    (G: GENERATOR with type key = Ordered.t and type value = Ordered.t) = struct
+module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
+    (G: GENERATOR with type key = KeyOrder.t and type value = ValueOrder.t) = struct
 
-  module Map = Map.Make(Ordered)
+  module Map = Map.Make(KeyOrder)
 
   let pair : (G.key * G.value) Crowbar.gen 
     = Crowbar.(Map ([G.key_gen; G.val_gen], fun x y -> x, y))
 
-  let map =
+  let largest val1 val2 =
+    match ValueOrder.compare val1 val2 with
+    | x when x < 0 -> Some val2
+    | 0 -> Some val2
+    | _ -> Some val1
+
+  let rec map =
     Crowbar.(Choose [
         Const Map.empty;
         Map ([G.key_gen; G.val_gen], Map.singleton);
         Map ([List pair], fun items ->
             List.fold_left (fun m (x, y) -> Map.add x y m) Map.empty items);
+        Map ([map; map], fun m1 m2 ->
+            Map.union (fun _key val1 val2 -> largest val1 val2) m1 m2);
       ])
 
   let check_bounds map =
     Crowbar.check @@ try
       match Map.min_binding map, Map.max_binding map with
-      | (min, _) , (max, _) when compare max min = 1 -> true
-      | (min, _) , (max, _) when compare max min = -1 -> false
+      | (min, _) , (max, _) when KeyOrder.compare max min = 1 -> true
+      | (min, _) , (max, _) when KeyOrder.compare max min = -1 -> false
       | (min, _) , (max, _) ->
-        Map.for_all (fun k _ -> compare k min = 0) map
+        Map.for_all (fun k _ -> KeyOrder.compare k min = 0) map
     with
     | Not_found -> 0 = Map.cardinal map
+
+  module Equality = struct
+
+    let check_remove m k =
+      Crowbar.check @@
+        match Map.mem k m with
+        | false ->
+          (* calling [remove k m] when [k] is not bound in [m] is claimed to
+             always return a map physically equal to [m] since 4.03.0 *)
+          (Map.remove k m) == m
+        | true ->
+          let without_k = Map.remove k m in
+          ((Map.remove k without_k) == without_k) &&
+          (* also, without_k should not be equal (in any sense!)
+             to the map with k in it *)
+          (0 <> Map.compare ValueOrder.compare m without_k)
+
+    let check_filter m =
+      Crowbar.check (Map.filter (fun _ _ -> true) m == m)
+  
+  end
 
   module Update = struct
 
@@ -37,11 +66,11 @@ module Map_tester(Ordered: Map.OrderedType)
       Crowbar.check @@ try
         match Map.mem k map with
         | false -> (* inserting should always get us the element *)
-          0 = Ordered.compare v
+          0 = ValueOrder.compare v
             (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
         | true -> (* inserting should always return the previous value *)
           let v' = Map.find k map in
-          0 = Ordered.compare v'
+          0 = ValueOrder.compare v'
             (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
       with
       | Not_found -> false
@@ -50,7 +79,7 @@ module Map_tester(Ordered: Map.OrderedType)
       Crowbar.check @@
       try
         (* inserting should always get us the element *)
-        0 = Ordered.compare v (Map.find k @@ Map.update k (fun _ -> Some v) map)
+        0 = ValueOrder.compare v (Map.find k @@ Map.update k (fun _ -> Some v) map)
       with
       | Not_found -> false
 
@@ -61,7 +90,7 @@ module Map_tester(Ordered: Map.OrderedType)
       in
       match Map.mem k map with
       | true ->
-        0 = Ordered.compare v (Map.find k @@ replace k v map)
+        0 = ValueOrder.compare v (Map.find k @@ replace k v map)
       | false ->
         0 = compare None (Map.find_opt k @@ replace k v map)
 
@@ -74,7 +103,7 @@ module Map_tester(Ordered: Map.OrderedType)
       in
       match Map.mem k map with
       | false -> (* our new binding should be there after transformation *)
-        0 = Ordered.compare v (Map.find k @@ transform k v map)
+        0 = ValueOrder.compare v (Map.find k @@ transform k v map)
       | true -> 
         0 = compare None (Map.find_opt k @@ transform k v map)
   end
@@ -82,25 +111,25 @@ module Map_tester(Ordered: Map.OrderedType)
   module Union = struct
 
     let union_largest m1 m2 =
-      let largest val1 val2 =
-        match Ordered.compare val1 val2 with
-        | x when x < 0 -> Some val2
-        | 0 -> Some val2
-        | _ -> Some val1
-      in
       let unioned = Map.union (fun _key val1 val2 -> largest val1 val2) m1 m2 in
       let merged = Map.merge (fun _key x y -> match x, y with
           | None, None -> None
           | Some v, None | None, Some v -> Some v
           | Some x, Some y -> largest x y) m1 m2
       in
-      Crowbar.check @@ Map.equal (fun x y -> 0 = Ordered.compare x y) merged unioned
+      Crowbar.check @@ Map.equal (fun x y -> 0 = ValueOrder.compare x y) merged unioned
   end
 
 
   let add_tests () =
     Crowbar.add_test ~name:"max_binding = min_binding implies all elements are equal"
       Crowbar.[map] check_bounds;
+    Equality.(
+    Crowbar.add_test ~name:"removing a key that isn't bound preserves physical \
+                            equality" Crowbar.[map; G.key_gen] check_remove;
+    Crowbar.add_test ~name:"filtering which keeps all elements retains physical \
+                            equality" Crowbar.[map] check_filter;
+    );
     Update.(
       Crowbar.add_test ~name:"destructive updates always shadow existing bindings"
         Crowbar.[map; pair] destructive_binding;
@@ -127,14 +156,19 @@ module IntGen = struct
   type value = int
   let key_gen, val_gen = Crowbar.int, Crowbar.int
 end
-module IntTester = Map_tester(OrdInt)(IntGen)
+module IntTester = Map_tester(OrdInt)(OrdInt)(IntGen)
 module StringGen = struct
   type key = string
   type value = string
   let key_gen, val_gen = Crowbar.bytes, Crowbar.bytes
 end
-module StringTester = Map_tester(String)(StringGen)
+module StringTester = Map_tester(String)(String)(StringGen)
+module IntStringTester = Map_tester(OrdInt)(String)(struct
+    type key = int type value = string
+    let key_gen, val_gen = Crowbar.int, Crowbar.bytes
+  end)
 
 let () =
   StringTester.add_tests ();
   IntTester.add_tests ();
+  IntStringTester.add_tests ();
