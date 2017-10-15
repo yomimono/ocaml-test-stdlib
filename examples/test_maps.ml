@@ -3,6 +3,8 @@ module type GENERATOR = sig
   type value
   val key_gen : key Crowbar.gen
   val val_gen : value Crowbar.gen
+  val pp_key : key Fmt.t
+  val pp_value : value Fmt.t
 end
 
 module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
@@ -13,11 +15,21 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
   let pair : (G.key * G.value) Crowbar.gen 
     = Crowbar.(Map ([G.key_gen; G.val_gen], fun x y -> x, y))
 
+  let pp_map f m =
+    let pp_pairmap = Fmt.list (Fmt.pair G.pp_key G.pp_value) in
+    pp_pairmap f (Map.bindings m)
+
   let largest val1 val2 =
     match ValueOrder.compare val1 val2 with
     | x when x < 0 -> Some val2
     | 0 -> Some val2
     | _ -> Some val1
+
+  let check_eq = 
+    Crowbar.check_eq
+      ~eq:(Map.equal (fun x y -> 0 = ValueOrder.compare x y))
+      ~cmp:(Map.compare ValueOrder.compare)
+      ~pp:pp_map
 
   let rec map =
     Crowbar.(Choose [
@@ -40,15 +52,19 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
     | Not_found -> 0 = Map.cardinal map
 
   module Equality = struct
+    
+    let phy_eq = Crowbar.check_eq
+      ~eq:(fun x y -> x == y)
+      ~cmp:(Map.compare ValueOrder.compare)
+      ~pp:pp_map
 
     let check_add m (k, v) =
-      Crowbar.check @@
       match Map.find_opt k m with
-      | Some v' when v == v -> m == Map.add k v m
-      | Some other_v -> Crowbar.bad_test ()
-      | None ->
-        let m = Map.add k v m in
-        m == Map.add k v m
+      | Some v' when v == v -> phy_eq m @@ Map.add k v m
+      | None | Some _ -> (* any previous value will be overwritten by first
+                            [add] *)
+        let m_with_v = Map.add k v m in
+        phy_eq m_with_v @@ Map.add k v m_with_v
 
     let check_remove m k =
       Crowbar.check @@
@@ -93,12 +109,8 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
       | Not_found -> false
 
     let destructive_binding map (k, v) =
-      Crowbar.check @@
-      try
-        (* inserting should always get us the element *)
-        0 = ValueOrder.compare v (Map.find k @@ Map.update k (fun _ -> Some v) map)
-      with
-      | Not_found -> false
+      (* inserting should always get us the element *)
+      Crowbar.check_eq ~cmp:ValueOrder.compare ~pp:G.pp_value v (Map.find k @@ Map.update k (fun _ -> Some v) map)
 
     let replace map (k, v) =
       Crowbar.check @@
@@ -134,7 +146,8 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
           | Some v, None | None, Some v -> Some v
           | Some x, Some y -> largest x y) m1 m2
       in
-      Crowbar.check @@ Map.equal (fun x y -> 0 = ValueOrder.compare x y) merged unioned
+      Crowbar.check_eq ~eq:(Map.equal (fun x y -> 0 = ValueOrder.compare x y))
+        ~cmp:(Map.compare ValueOrder.compare) merged unioned
   end
 
 
@@ -176,17 +189,20 @@ module IntGen = struct
   type key = int
   type value = int
   let key_gen, val_gen = Crowbar.int, Crowbar.int
+  let pp_key, pp_value = Fmt.int, Fmt.int
 end
 module IntTester = Map_tester(OrdInt)(OrdInt)(IntGen)
 module StringGen = struct
   type key = string
   type value = string
   let key_gen, val_gen = Crowbar.bytes, Crowbar.bytes
+  let pp_key, pp_value = Fmt.string, Fmt.string
 end
 module StringTester = Map_tester(String)(String)(StringGen)
 module IntStringTester = Map_tester(OrdInt)(String)(struct
     type key = int type value = string
     let key_gen, val_gen = Crowbar.int, Crowbar.bytes
+    let pp_key, pp_value = Fmt.int, Fmt.string
   end)
 
 let () =
