@@ -41,6 +41,15 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
 
   module Equality = struct
 
+    let check_add m (k, v) =
+      Crowbar.check @@
+      match Map.find_opt k m with
+      | Some v' when v == v -> m == Map.add k v m
+      | Some other_v -> Crowbar.bad_test ()
+      | None ->
+        let m = Map.add k v m in
+        m == Map.add k v m
+
     let check_remove m k =
       Crowbar.check @@
         match Map.mem k m with
@@ -139,6 +148,8 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
                             equality" Crowbar.[map] check_filter;
     Crowbar.add_test ~name:"choose gets the same binding for same maps"
       Crowbar.[map] check_choose;
+    Crowbar.add_test ~name:"add of a physically equal element gets a physically \
+                            equal map" Crowbar.[map; pair] check_add;
     );
     Update.(
       Crowbar.add_test ~name:"destructive updates always shadow existing bindings"
