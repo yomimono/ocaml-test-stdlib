@@ -67,23 +67,15 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
             disjunction l r);
         Map ([map], fun m -> Map.map (fun a -> a) m);
         Map ([map], fun m -> Map.mapi (fun _ a -> a) m);
-
       ])
 
   let check_bounds map =
-    try
-      match Map.min_binding map, Map.max_binding map with
-      | (min, _) , (max, _) when KeyOrder.compare max min > 0 -> Crowbar.check true
-      | (min, _) , (max, _) when KeyOrder.compare max min < 0 -> Crowbar.check false
-      | (k1, v1) , (k2, v2) when KeyOrder.compare k1 k2 = 0 ->
-        (* this only makes sense for the singleton map, where the only key
-           is physically equal to both min and max *)
-        Crowbar.check_eq ~pp:Fmt.int 1 @@ Map.cardinal map
-      | min, max ->
-        Format.printf "Something terrible has happened here:\n%a\n%!" pp_map map;
-        Crowbar.check false
-    with
-    | Not_found -> map_eq Map.empty map
+    match Map.min_binding map, Map.max_binding map with
+    | (k1, v1) , (k2, v2) when KeyOrder.compare k1 k2 = 0 ->
+      (* this only makes sense for the singleton map *)
+      Crowbar.check_eq 1 @@ Map.cardinal map
+    | (min, _) , (max, _) -> KeyOrder.compare max min > 0 |> Crowbar.check
+    | exception Not_found -> map_eq Map.empty map
 
   module Equality = struct
     
