@@ -9,7 +9,7 @@ PKG_fpath = fpath
 PKG_join =
 
 .PHONY: all clean
-all: $(TESTS) alltests
+all: $(TESTS)
 clean:
 	rm -f $(TESTS) alltests
 
@@ -17,7 +17,7 @@ $(TESTS): %: shims.ml test_%.ml
 	ocamlfind ocamlopt -package crowbar,$(PKG_$*) -linkpkg $^ -o $@ 
 
 ALL_PKG = $(foreach v,$(TESTS),$(PKG_$(v)))
-alltests: $(TESTS:%=test_%.ml)
+alltests: shims.ml $(TESTS:%=test_%.ml)
 	ocamlfind ocamlopt -package crowbar \
 	  $(ALL_PKG:%=-package %) \
 	  -linkpkg \
