@@ -1,9 +1,10 @@
-TESTS = maps fpath
+TESTS = maps fpath sets
 PKG_calendar = calendar
 PKG_pprint = pprint,str
 PKG_xmldiff = xmldiff
 PKG_map =
 PKG_maps = fmt
+PKG_sets = fmt
 PKG_fpath = fpath
 PKG_join =
 
