@@ -28,7 +28,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
     | 0 -> Some val2
     | _ -> Some val1
 
-  let check_eq = 
+  let map_eq = 
     Crowbar.check_eq
       ~eq:(Map.equal (fun x y -> 0 = ValueOrder.compare x y))
       ~cmp:(Map.compare ValueOrder.compare)
@@ -94,46 +94,44 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
 
   module Update = struct
 
+    let val_eq = Crowbar.check_eq ~cmp:ValueOrder.compare ~pp:G.pp_value
+
     let nondestructive_binding map (k, v) =
-      Crowbar.check @@ try
-        match Map.mem k map with
-        | false -> (* inserting should always get us the element *)
-          0 = ValueOrder.compare v
-            (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
-        | true -> (* inserting should always return the previous value *)
-          let v' = Map.find k map in
-          0 = ValueOrder.compare v'
-            (Map.find k @@ Map.update k (function None -> Some v | e -> e) map)
-      with
-      | Not_found -> false
+      let f = function None -> Some v | e -> e in
+      match Map.mem k map with
+      | false -> (* inserting should always get us the element *)
+        val_eq v @@ Map.find k @@ Map.update k f map
+      | true -> (* inserting should always return the previous value *)
+        let v' = Map.find k map in
+        val_eq v' @@ Map.find k @@ Map.update k f map
 
     let destructive_binding map (k, v) =
       (* inserting should always get us the element *)
-      Crowbar.check_eq ~cmp:ValueOrder.compare ~pp:G.pp_value v (Map.find k @@ Map.update k (fun _ -> Some v) map)
+      val_eq v (Map.find k @@ Map.update k (fun _ -> Some v) map)
 
     let replace map (k, v) =
-      Crowbar.check @@
       let replace k v map =
         Map.update k (function None -> None | Some _ -> Some v) map
       in
       match Map.mem k map with
       | true ->
-        0 = ValueOrder.compare v (Map.find k @@ replace k v map)
+        val_eq v (Map.find k @@ replace k v map)
       | false ->
-        0 = compare None (Map.find_opt k @@ replace k v map)
+        Crowbar.check_eq ~pp:(Fmt.option G.pp_value) None
+          (Map.find_opt k @@ replace k v map)
 
     (* I don't know why this is important, but it's in the unit tests, so let's
        include it *)
     let delete_extant_bind_new map (k, v) =
-      Crowbar.check @@
-      let transform k v map = Map.update k (function None -> Some v | Some _ ->
-          None) map
+      let transform k v map =
+        Map.update k (function None -> Some v | Some _ -> None) map
       in
       match Map.mem k map with
       | false -> (* our new binding should be there after transformation *)
-        0 = ValueOrder.compare v (Map.find k @@ transform k v map)
+        val_eq v @@ Map.find k @@ transform k v map
       | true -> 
-        0 = compare None (Map.find_opt k @@ transform k v map)
+        Crowbar.check_eq ~pp:(Fmt.option G.pp_value)
+          None (Map.find_opt k @@ transform k v map)
   end
 
   module Union = struct
@@ -145,8 +143,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
           | Some v, None | None, Some v -> Some v
           | Some x, Some y -> largest x y) m1 m2
       in
-      Crowbar.check_eq ~eq:(Map.equal (fun x y -> 0 = ValueOrder.compare x y))
-        ~cmp:(Map.compare ValueOrder.compare) merged unioned
+      map_eq merged unioned
   end
 
 
