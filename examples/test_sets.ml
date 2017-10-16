@@ -3,7 +3,7 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
   module Set = Set.Make(Elt)
 
   let set = Crowbar.(Choose [
-
+      Map ([List G.gen], Set.of_list);
     ])
 
   let noddy = fun _ -> Crowbar.check true
