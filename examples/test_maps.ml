@@ -49,7 +49,12 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
                 | None, None -> None
                 | Some v, None | None, Some v -> Some v
                 | Some x, Some y -> None
-              ) m1 m2)
+              ) m1 m2);
+        Map ([map; List pair], fun map l ->
+             Map.filter (fun k v -> try 
+                            0 = ValueOrder.compare v @@ List.assoc k l
+                          with Not_found -> false
+                        ) map);
       ])
 
   let check_bounds map =
