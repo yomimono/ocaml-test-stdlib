@@ -66,7 +66,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
         Map ([map; G.key_gen], fun m k ->
             (* we could test whether this is equivalent to Map.remove k m *)
             let l, _, r = Map.split k m in
-            disjunction l r);
+            disjunction r l);
         Map ([map], fun m -> Map.map G.value_transform m);
         Map ([map], fun m -> Map.mapi (fun _ a -> G.value_transform a) m);
       ])
