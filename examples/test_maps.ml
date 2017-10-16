@@ -200,11 +200,23 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
 
 end
 
-module StringTester = Map_tester(String)(String)(Shims.StringString)
-module IntStringTester = Map_tester(Shims.OrdInt)(String)(Shims.IntString)
-module CharIntTester = Map_tester(Char)(Shims.OrdInt)(Shims.CharInt)
-module NativeIntTester = Map_tester(Nativeint)(Shims.OrdInt)(Shims.NativeintString)
-module UcharStringTester = Map_tester(Uchar)(String)(Shims.UcharString)
+module Make_generator(K: Shims.GENERABLE)(V: Shims.GENERABLE) = struct
+  type key = K.t
+  type value = V.t
+  let key_gen, pp_key = K.gen, K.pp
+  let val_gen, pp_value = V.gen, V.pp
+end
+module StringString = Make_generator(Shims.String)(Shims.String)
+module IntString = Make_generator(Shims.Int)(Shims.String)
+module CharInt = Make_generator(Shims.Char)(Shims.Int)
+module NativeintInt = Make_generator(Shims.Nativeint)(Shims.Int)
+module UcharString = Make_generator(Shims.Uchar)(Shims.String)
+
+module StringTester = Map_tester(String)(String)(StringString)
+module IntStringTester = Map_tester(Shims.OrdInt)(String)(IntString)
+module CharIntTester = Map_tester(Char)(Shims.OrdInt)(CharInt)
+module NativeIntTester = Map_tester(Nativeint)(Shims.OrdInt)(NativeintInt)
+module UcharStringTester = Map_tester(Uchar)(String)(UcharString)
 
 let () =
   StringTester.add_tests ();
