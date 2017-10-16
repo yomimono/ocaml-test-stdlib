@@ -2,8 +2,20 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
 = struct
   module Set = Set.Make(Elt)
 
-  let set = Crowbar.(Choose [
+  let rec set = Crowbar.(Choose [
+      Const Set.empty;
       Map ([List G.gen], Set.of_list);
+      Map ([G.gen; set], Set.add);
+      Map ([G.gen; set], Set.remove);
+      Map ([G.gen], Set.singleton);
+      Map ([set; set], Set.union);
+      Map ([set; set], Set.inter);
+      Map ([set; set], Set.diff);
+      Map ([set], Set.filter (fun _ -> true));
+      Map ([set], fun s -> Set.partition (fun _ -> true) s |> fst);
+      Map ([G.gen; set], (fun e s ->
+          let l, _, r = Set.split e s in
+          Set.union l r));
     ])
 
   let check_min_max s =
