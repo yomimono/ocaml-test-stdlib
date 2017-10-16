@@ -34,6 +34,12 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
       ~cmp:(Map.compare ValueOrder.compare)
       ~pp:pp_map
 
+  let disjunction =
+    Map.merge (fun _key val1 val2 -> match val1, val2 with
+        | None, None -> None
+        | Some v, None | None, Some v -> Some v
+        | Some x, Some y -> None)
+
   let rec map =
     Crowbar.(Choose [
         Const Map.empty;
@@ -44,17 +50,24 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
             Map.union (fun _key val1 val2 -> largest val1 val2) m1 m2);
         Map ([map; G.key_gen], fun m k -> Map.remove k m);
         Map ([map; pair], fun m (k, v) -> Map.add k v m);
-        Map ([map; map], fun m1 m2 ->
-            Map.merge (fun _key val1 val2 -> match val1, val2 with
-                | None, None -> None
-                | Some v, None | None, Some v -> Some v
-                | Some x, Some y -> None
-              ) m1 m2);
+        Map ([map; map], disjunction); (* Map.merge *)
         Map ([map; List pair], fun map l ->
              Map.filter (fun k v -> try 
                             0 = ValueOrder.compare v @@ List.assoc k l
                           with Not_found -> false
                         ) map);
+        Map ([map; List pair], fun map l ->
+             snd @@ Map.partition (fun k v -> try 
+                            0 = ValueOrder.compare v @@ List.assoc k l
+                          with Not_found -> false
+                                  ) map);
+        Map ([map; G.key_gen], fun m k ->
+            (* we could test whether this is equivalent to Map.remove k m *)
+            let l, _, r = Map.split k m in
+            disjunction l r);
+        Map ([map], fun m -> Map.map (fun a -> a) m);
+        Map ([map], fun m -> Map.mapi (fun _ a -> a) m);
+
       ])
 
   let check_bounds map =
