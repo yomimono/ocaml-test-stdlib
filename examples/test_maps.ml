@@ -73,7 +73,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
     match Map.min_binding map, Map.max_binding map with
     | (k1, v1) , (k2, v2) when KeyOrder.compare k1 k2 = 0 ->
       (* this only makes sense for the singleton map *)
-      Crowbar.check_eq 1 @@ Map.cardinal map
+      map_eq map @@ Map.singleton k1 v2
     | (min, _) , (max, _) -> KeyOrder.compare max min > 0 |> Crowbar.check
     | exception Not_found -> map_eq Map.empty map
 
