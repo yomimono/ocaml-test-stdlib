@@ -16,7 +16,10 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
     = Crowbar.(Map ([G.key_gen; G.val_gen], fun x y -> x, y))
 
   let pp_map f m =
-    let pp_pairmap = Fmt.list (Fmt.pair G.pp_key G.pp_value) in
+    let pairsep = Fmt.(const string " -> ") in
+    let listsep = Fmt.(const string " | ") in
+    let pp_pairmap = Fmt.list ~sep:listsep
+        (Fmt.pair ~sep:pairsep G.pp_key G.pp_value) in
     pp_pairmap f (Map.bindings m)
 
   let largest val1 val2 =
@@ -60,7 +63,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
 
     let check_add m (k, v) =
       match Map.find_opt k m with
-      | Some v' when v == v -> phy_eq m @@ Map.add k v m
+      | Some v' when v' == v -> phy_eq m @@ Map.add k v m
       | None | Some _ -> (* any previous value will be overwritten by first
                             [add] *)
         let m_with_v = Map.add k v m in
