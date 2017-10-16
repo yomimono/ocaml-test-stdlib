@@ -43,6 +43,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
         Map ([map; map], fun m1 m2 ->
             Map.union (fun _key val1 val2 -> largest val1 val2) m1 m2);
         Map ([map; G.key_gen], fun m k -> Map.remove k m);
+        Map ([map; pair], fun m (k, v) -> Map.add k v m);
         Map ([map; map], fun m1 m2 ->
             Map.merge (fun _key val1 val2 -> match val1, val2 with
                 | None, None -> None
@@ -208,7 +209,7 @@ module IntStringTester = Map_tester(OrdInt)(String)(struct
   let key_gen, val_gen = Crowbar.int, Crowbar.bytes
   let pp_key, pp_value = Fmt.int, Fmt.string
 end)
-(* Char is much more likely to run into interesting key and value collisions *)
+(* Char is much more likely to run into key collisions *)
 module CharIntTester = Map_tester(Char)(OrdInt)(struct
   type key = char type value = int
   let key_gen, val_gen = Crowbar.(Map ([uint8], Char.chr)), Crowbar.int
