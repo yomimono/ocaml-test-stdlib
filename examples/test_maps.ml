@@ -5,6 +5,8 @@ module type GENERATOR = sig
   val val_gen : value Crowbar.gen
   val pp_key : key Fmt.t
   val pp_value : value Fmt.t
+  val key_transform : key -> key
+  val value_transform : value -> value
 end
 
 module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
@@ -65,8 +67,8 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
             (* we could test whether this is equivalent to Map.remove k m *)
             let l, _, r = Map.split k m in
             disjunction l r);
-        Map ([map], fun m -> Map.map (fun a -> a) m);
-        Map ([map], fun m -> Map.mapi (fun _ a -> a) m);
+        Map ([map], fun m -> Map.map G.value_transform m);
+        Map ([map], fun m -> Map.mapi (fun _ a -> G.value_transform a) m);
       ])
 
   let check_bounds map =
@@ -205,6 +207,7 @@ module Make_generator(K: Shims.GENERABLE)(V: Shims.GENERABLE) = struct
   type value = V.t
   let key_gen, pp_key = K.gen, K.pp
   let val_gen, pp_value = V.gen, V.pp
+  let key_transform, value_transform = K.transform, V.transform
 end
 module StringString = Make_generator(Shims.String)(Shims.String)
 module IntString = Make_generator(Shims.Int)(Shims.String)
