@@ -22,7 +22,9 @@ module Int = struct
   type t = int
   let gen = Crowbar.int
   let pp = Fmt.int
-  let transform n = n - 2
+  let transform = function
+    | n when n mod 2 = 0 -> n + 10
+    | n -> n - 10
 end
 module Char = struct
   type t = char
