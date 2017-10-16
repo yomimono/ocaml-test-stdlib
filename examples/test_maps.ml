@@ -12,7 +12,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
 
   module Map = Map.Make(KeyOrder)
 
-  let pair : (G.key * G.value) Crowbar.gen 
+  let pair : (G.key * G.value) Crowbar.gen
     = Crowbar.(Map ([G.key_gen; G.val_gen], fun x y -> x, y))
 
   let pp_map f m =
@@ -28,7 +28,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
     | 0 -> Some val2
     | _ -> Some val1
 
-  let map_eq = 
+  let map_eq =
     Crowbar.check_eq
       ~eq:(Map.equal (fun x y -> 0 = ValueOrder.compare x y))
       ~cmp:(Map.compare ValueOrder.compare)
@@ -52,12 +52,12 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
         Map ([map; pair], fun m (k, v) -> Map.add k v m);
         Map ([map; map], disjunction); (* Map.merge *)
         Map ([map; List pair], fun map l ->
-             Map.filter (fun k v -> try 
+             Map.filter (fun k v -> try
                             0 = ValueOrder.compare v @@ List.assoc k l
                           with Not_found -> false
                         ) map);
         Map ([map; List pair], fun map l ->
-             snd @@ Map.partition (fun k v -> try 
+             snd @@ Map.partition (fun k v -> try
                             0 = ValueOrder.compare v @@ List.assoc k l
                           with Not_found -> false
                                   ) map);
@@ -78,7 +78,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
     | exception Not_found -> map_eq Map.empty map
 
   module Equality = struct
-    
+
     let phy_eq = Crowbar.check_eq
       ~eq:(fun x y -> x == y)
       ~cmp:(Map.compare ValueOrder.compare)
@@ -112,7 +112,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
       | (k1, v1), (k2, v2) -> (0 = KeyOrder.compare k1 k2 &&
                                0 = ValueOrder.compare v1 v2)
       | exception Not_found -> Crowbar.bad_test ()
-  
+
   end
 
   module Update = struct
@@ -152,7 +152,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
       match Map.mem k map with
       | false -> (* our new binding should be there after transformation *)
         val_eq v @@ Map.find k @@ transform k v map
-      | true -> 
+      | true ->
         Crowbar.check_eq ~pp:(Fmt.option G.pp_value)
           None (Map.find_opt k @@ transform k v map)
   end
@@ -204,11 +204,6 @@ module OrdInt = struct
   type t = int
   let compare (i : int) (j : int) = compare i j
 end
-module IntTester = Map_tester(OrdInt)(OrdInt)(struct
-  type key = int type value = int
-  let key_gen, val_gen = Crowbar.int, Crowbar.int
-  let pp_key, pp_value = Fmt.int, Fmt.int
-end)
 module StringTester = Map_tester(String)(String)(struct
   type key = string type value = string
   let key_gen, val_gen = Crowbar.bytes, Crowbar.bytes
@@ -225,9 +220,26 @@ module CharIntTester = Map_tester(Char)(OrdInt)(struct
   let key_gen, val_gen = Crowbar.(Map ([uint8], Char.chr)), Crowbar.int
   let pp_key, pp_value = Fmt.char, Fmt.int
 end)
+module NativeIntTester = Map_tester(Nativeint)(OrdInt)(struct
+  type key = Nativeint.t type value = int
+  let key_gen, val_gen = Crowbar.(Map ([int], Nativeint.of_int)), Crowbar.int
+  let pp_key f key = Fmt.string f (Nativeint.to_string key)
+  let pp_value = Fmt.int
+end)
+module UcharStringTester = Map_tester(Uchar)(String)(struct
+    type key = Uchar.t type value = string
+    (* stolen (sdolan?) from test_uunf *)
+    let key_gen = Crowbar.(Map ([int32], fun n ->
+      let n = Int32.to_int n land 0x1FFFFF in
+      try Uchar.of_int n with Invalid_argument _ -> bad_test ()))
+    let val_gen = Crowbar.bytes
+    let pp_key f key = Fmt.int f (Uchar.to_int key)
+    let pp_value = Fmt.string
+end)
 
 let () =
   StringTester.add_tests ();
-  IntTester.add_tests ();
   IntStringTester.add_tests ();
   CharIntTester.add_tests ();
+  NativeIntTester.add_tests ();
+  UcharStringTester.add_tests ();
