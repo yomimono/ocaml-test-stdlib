@@ -188,27 +188,30 @@ module OrdInt = struct
   type t = int
   let compare (i : int) (j : int) = compare i j
 end
-module IntGen = struct
-  type key = int
-  type value = int
+module IntTester = Map_tester(OrdInt)(OrdInt)(struct
+  type key = int type value = int
   let key_gen, val_gen = Crowbar.int, Crowbar.int
   let pp_key, pp_value = Fmt.int, Fmt.int
-end
-module IntTester = Map_tester(OrdInt)(OrdInt)(IntGen)
-module StringGen = struct
-  type key = string
-  type value = string
+end)
+module StringTester = Map_tester(String)(String)(struct
+  type key = string type value = string
   let key_gen, val_gen = Crowbar.bytes, Crowbar.bytes
   let pp_key, pp_value = Fmt.string, Fmt.string
-end
-module StringTester = Map_tester(String)(String)(StringGen)
+end)
 module IntStringTester = Map_tester(OrdInt)(String)(struct
-    type key = int type value = string
-    let key_gen, val_gen = Crowbar.int, Crowbar.bytes
-    let pp_key, pp_value = Fmt.int, Fmt.string
-  end)
+  type key = int type value = string
+  let key_gen, val_gen = Crowbar.int, Crowbar.bytes
+  let pp_key, pp_value = Fmt.int, Fmt.string
+end)
+(* Char is much more likely to run into interesting key and value collisions *)
+module CharIntTester = Map_tester(Char)(OrdInt)(struct
+  type key = char type value = int
+  let key_gen, val_gen = Crowbar.(Map ([uint8], Char.chr)), Crowbar.int
+  let pp_key, pp_value = Fmt.char, Fmt.int
+end)
 
 let () =
   StringTester.add_tests ();
   IntTester.add_tests ();
   IntStringTester.add_tests ();
+  CharIntTester.add_tests ();
