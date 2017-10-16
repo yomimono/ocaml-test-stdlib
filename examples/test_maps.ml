@@ -39,9 +39,16 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
         Const Map.empty;
         Map ([G.key_gen; G.val_gen], Map.singleton);
         Map ([List pair], fun items ->
-            List.fold_left (fun m (x, y) -> Map.add x y m) Map.empty items);
+            List.fold_left (fun m (k, v) -> Map.add k v m) Map.empty items);
         Map ([map; map], fun m1 m2 ->
             Map.union (fun _key val1 val2 -> largest val1 val2) m1 m2);
+        Map ([map; G.key_gen], fun m k -> Map.remove k m);
+        Map ([map; map], fun m1 m2 ->
+            Map.merge (fun _key val1 val2 -> match val1, val2 with
+                | None, None -> None
+                | Some v, None | None, Some v -> Some v
+                | Some x, Some y -> None
+              ) m1 m2)
       ])
 
   let check_bounds map =
