@@ -33,13 +33,20 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
     | true -> Crowbar.check_eq ~eq:(fun x y -> x == y) s (Set.add elt s)
     | false ->
       let s = Set.add elt s in
-      Crowbar.check_eq ~eq:(fun x y -> x == y) s (Set.add elt s)
+      Crowbar.check_eq ~eq:(==) s (Set.add elt s)
+
+  let check_map_equality s =
+    Crowbar.check_eq ~eq:(==) s (Set.map (fun a -> a) s)
 
   let add_tests () =
-    Crowbar.add_test ~name: "Set.min >= Set.max only when the set has 1 element"
+    Crowbar.add_test ~name:"Set.min >= Set.max only when the set has 1 element"
       Crowbar.[set] check_min_max;
-    Crowbar.add_test ~name: "Set.add never results in a set with fewer elements"
+    Crowbar.add_test ~name:"Set.add never results in a set with fewer elements"
       Crowbar.[set; G.gen] check_add_cardinality;
+    Crowbar.add_test ~name:"Set.add of an element present preserves physical \
+                            equality" Crowbar.[set; G.gen] check_add_equality;
+    Crowbar.add_test ~name:"Set.map with identity function preserves physical \
+                            equality" Crowbar.[set] check_map_equality;
 
 end
 
