@@ -1,4 +1,4 @@
-TESTS = maps fpath sets
+TESTS = maps sets
 PKG_calendar = calendar
 PKG_pprint = pprint,str
 PKG_xmldiff = xmldiff
@@ -13,7 +13,7 @@ all: $(TESTS) alltests
 clean:
 	rm -f $(TESTS) alltests
 
-$(TESTS): %: test_%.ml
+$(TESTS): %: shims.ml test_%.ml
 	ocamlfind ocamlopt -package crowbar,$(PKG_$*) -linkpkg $^ -o $@ 
 
 ALL_PKG = $(foreach v,$(TESTS),$(PKG_$(v)))
