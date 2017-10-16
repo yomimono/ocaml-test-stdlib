@@ -70,21 +70,17 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
         phy_eq m_with_v @@ Map.add k v m_with_v
 
     let check_remove m k =
-      Crowbar.check @@
         match Map.mem k m with
         | false ->
           (* calling [remove k m] when [k] is not bound in [m] is claimed to
              always return a map physically equal to [m] since 4.03.0 *)
-          (Map.remove k m) == m
+          phy_eq m @@ Map.remove k m
         | true ->
           let without_k = Map.remove k m in
-          ((Map.remove k without_k) == without_k) &&
-          (* also, without_k should not be equal (in any sense!)
-             to the map with k in it *)
-          (0 <> Map.compare ValueOrder.compare m without_k)
+          phy_eq without_k @@ Map.remove k without_k
 
     let check_filter m =
-      Crowbar.check (Map.filter (fun _ _ -> true) m == m)
+      phy_eq m @@ Map.filter (fun _ _ -> true) m
 
     let check_choose m =
       let also_m = m in
