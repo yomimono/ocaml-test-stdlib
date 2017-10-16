@@ -38,6 +38,10 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
   let check_map_equality s =
     Crowbar.check_eq ~eq:(==) s (Set.map (fun a -> a) s)
 
+  let check_map s =
+    let s' = Set.map G.transform s in
+    Set.for_all (fun e -> Set.mem (G.transform e) s') s |> Crowbar.check
+
   let add_tests () =
     Crowbar.add_test ~name:"Set.min >= Set.max only when the set has 1 element"
       Crowbar.[set] check_min_max;
@@ -47,6 +51,8 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
                             equality" Crowbar.[set; G.gen] check_add_equality;
     Crowbar.add_test ~name:"Set.map with identity function preserves physical \
                             equality" Crowbar.[set] check_map_equality;
+    Crowbar.add_test ~name:"Set.map represents f(x) for all items in the input \
+                            set" Crowbar.[set] check_map;
 
 end
 
