@@ -8,7 +8,7 @@ clean:
 	rm -f $(TESTS) alltests
 
 $(TESTS): %: shims.ml test_%.ml
-	ocamlfind ocamlopt -package crowbar,$(PKG_$*) -linkpkg $^ -o $@ 
+	ocamlfind ocamlopt -w +A-4-41-42-44-45 -package crowbar,$(PKG_$*) -linkpkg $^ -o $@ 
 
 ALL_PKG = $(foreach v,$(TESTS),$(PKG_$(v)))
 alltests: shims.ml $(TESTS:%=test_%.ml)
