@@ -40,7 +40,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
     Map.merge (fun _key val1 val2 -> match val1, val2 with
         | None, None -> None
         | Some v, None | None, Some v -> Some v
-        | Some x, Some y -> None)
+        | Some _, Some _ -> None)
 
   let rec map =
     Crowbar.(Choose [
@@ -73,7 +73,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
 
   let check_bounds map =
     match Map.min_binding map, Map.max_binding map with
-    | (k1, v1) , (k2, v2) when KeyOrder.compare k1 k2 = 0 ->
+    | (k1, _v1) , (k2, v2) when KeyOrder.compare k1 k2 = 0 ->
       (* this only makes sense for the singleton map *)
       map_eq map @@ Map.singleton k1 v2
     | (min, _) , (max, _) -> KeyOrder.compare max min > 0 |> Crowbar.check
