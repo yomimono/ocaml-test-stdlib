@@ -35,12 +35,23 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
       let s = Set.add elt s in
       Crowbar.check_eq ~eq:(==) s (Set.add elt s)
 
+  let check_remove_equality s elt =
+    match Set.mem elt s with
+    | false -> Crowbar.check_eq ~eq:(fun x y -> x == y) s (Set.add elt s)
+    | true ->
+      let s = Set.remove elt s in
+      Crowbar.check_eq ~eq:(==) s (Set.remove elt s)
+
   let check_map_equality s =
     Crowbar.check_eq ~eq:(==) s (Set.map (fun a -> a) s)
 
   let check_map s =
     let s' = Set.map G.transform s in
     Set.for_all (fun e -> Set.mem (G.transform e) s') s |> Crowbar.check
+
+  let check_union s1 s2 =
+    let c1, c2 = Set.(cardinal s1, cardinal s2) in
+    Crowbar.check ((min c1 c2) <= Set.(union s1 s2 |> cardinal))
 
   let add_tests () =
     Crowbar.add_test ~name:"Set.min >= Set.max only when the set has 1 element"
@@ -49,10 +60,16 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
       Crowbar.[set; G.gen] check_add_cardinality;
     Crowbar.add_test ~name:"Set.add of an element present preserves physical \
                             equality" Crowbar.[set; G.gen] check_add_equality;
+    Crowbar.add_test ~name:"Set.remove on set without that element preserves \
+                            physical equality" Crowbar.[set; G.gen]
+      check_remove_equality;
     Crowbar.add_test ~name:"Set.map with identity function preserves physical \
                             equality" Crowbar.[set] check_map_equality;
     Crowbar.add_test ~name:"Set.map represents f(x) for all items in the input \
                             set" Crowbar.[set] check_map;
+    Crowbar.add_test ~name:"Set.union never results in a set with fewer \
+                            elements than the smaller of the two sets"
+      Crowbar.[set; set] check_union;
 
 end
 
