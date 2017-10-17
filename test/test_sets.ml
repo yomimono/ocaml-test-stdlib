@@ -2,6 +2,9 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
 = struct
   module Set = Set.Make(Elt)
 
+  let all_in ~f ~search ~source =
+    Set.for_all (fun e -> Set.mem (f e) search) source
+
   let rec set : Set.t Crowbar.gen = Crowbar.(Choose [
       Const Set.empty;
       Map ([List G.gen], Set.of_list);
@@ -55,11 +58,12 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
 
   let check_map s =
     let s' = Set.map G.transform s in
-    Set.for_all (fun e -> Set.mem (G.transform e) s') s |> Crowbar.check
+    all_in ~source:s ~search:s' ~f:G.transform |> Crowbar.check
 
   let check_union s1 s2 =
-    let c1, c2 = Set.(cardinal s1, cardinal s2) in
-    Crowbar.check ((min c1 c2) <= Set.(union s1 s2 |> cardinal))
+    let u = Set.union s1 s2 in
+    ((all_in ~f:(fun a -> a) ~source:s1 ~search:u) &&
+     (all_in ~f:(fun a -> a) ~source:s2 ~search:u)) |> Crowbar.check
 
   let add_tests () =
     Crowbar.add_test ~name:"Set.min >= Set.max only when the set has 1 element"
@@ -75,8 +79,7 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
                             equality" Crowbar.[set] check_map_equality;
     Crowbar.add_test ~name:"Set.map represents f(x) for all items in the input \
                             set" Crowbar.[set] check_map;
-    Crowbar.add_test ~name:"Set.union never results in a set with fewer \
-                            elements than the smaller of the two sets"
+    Crowbar.add_test ~name:"Set.union contains every element in both sets"
       Crowbar.[set; set] check_union;
 
 end
