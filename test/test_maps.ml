@@ -176,14 +176,14 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
     Crowbar.add_test ~name:"max_binding = min_binding implies all elements are equal"
       Crowbar.[map] check_bounds;
     Equality.(
-    Crowbar.add_test ~name:"removing a key that isn't bound preserves physical \
-                            equality" Crowbar.[map; G.key_gen] check_remove;
-    Crowbar.add_test ~name:"filtering which keeps all elements retains physical \
-                            equality" Crowbar.[map] check_filter;
-    Crowbar.add_test ~name:"choose gets the same binding for same maps"
-      Crowbar.[map] check_choose;
-    Crowbar.add_test ~name:"add of a physically equal element gets a physically \
-                            equal map" Crowbar.[map; pair] check_add;
+      Crowbar.add_test ~name:"removing a key that isn't bound preserves physical \
+                              equality" Crowbar.[map; G.key_gen] check_remove;
+      Crowbar.add_test ~name:"filtering which keeps all elements retains physical \
+                              equality" Crowbar.[map] check_filter;
+      Crowbar.add_test ~name:"choose gets the same binding for same maps"
+        Crowbar.[map] check_choose;
+      Crowbar.add_test ~name:"add of a physically equal element gets a physically \
+                              equal map" Crowbar.[map; pair] check_add;
     );
     Update.(
       Crowbar.add_test ~name:"destructive updates always shadow existing bindings"
