@@ -37,7 +37,7 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
 
   let check_remove_equality s elt =
     match Set.mem elt s with
-    | false -> Crowbar.check_eq ~eq:(fun x y -> x == y) s (Set.add elt s)
+    | false -> Crowbar.check_eq ~eq:(fun x y -> x == y) s (Set.remove elt s)
     | true ->
       let s = Set.remove elt s in
       Crowbar.check_eq ~eq:(==) s (Set.remove elt s)
