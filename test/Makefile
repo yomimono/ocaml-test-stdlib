@@ -1,5 +1,4 @@
-TESTS = map maps sets
-PKG_map =
+TESTS = maps sets
 PKG_maps = fmt
 PKG_sets = fmt
 
