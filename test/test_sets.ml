@@ -26,7 +26,10 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
     | exception Not_found -> Crowbar.check @@ Set.is_empty s
 
   let check_add_cardinality s elt =
-    Set.((cardinal s) <= (add elt s |> cardinal)) |> Crowbar.check
+    match Set.mem elt s with
+    | true -> Crowbar.check_eq Set.(cardinal s) Set.(add elt s |> cardinal)
+    | false -> Crowbar.check_eq
+                 ((Set.cardinal s) + 1) Set.(add elt s |> cardinal)
 
   let check_add_equality s elt =
     match Set.mem elt s with
@@ -34,6 +37,11 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
     | false ->
       let s = Set.add elt s in
       Crowbar.check_eq ~eq:(==) s (Set.add elt s)
+
+  let check_remove_cardinality s elt =
+    match Set.mem elt s with
+    | true -> Crowbar.check_eq ((Set.cardinal s) - 1) Set.(remove elt s |> cardinal)
+    | false -> Crowbar.check_eq Set.(cardinal s) Set.(remove elt s |> cardinal)
 
   let check_remove_equality s elt =
     match Set.mem elt s with
