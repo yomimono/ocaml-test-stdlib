@@ -1,12 +1,7 @@
-TESTS = maps sets
-PKG_calendar = calendar
-PKG_pprint = pprint,str
-PKG_xmldiff = xmldiff
+TESTS = map maps sets
 PKG_map =
 PKG_maps = fmt
 PKG_sets = fmt
-PKG_fpath = fpath
-PKG_join =
 
 .PHONY: all clean
 all: $(TESTS)

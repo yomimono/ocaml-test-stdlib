@@ -1,0 +1,7 @@
+*.cm*
+*.o
+maps
+sets
+map
+output
+alltests
