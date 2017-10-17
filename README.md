@@ -70,3 +70,55 @@ To see the tests themselves, have a look at `test_maps.ml` and `test_sets.ml` in
 # Have you found any bugs?
 
 Not yet!
+
+## How hard are you looking?
+
+As of commit `7a62b7`, no bugs have been found (although a test run is currently in progress).  To get a better idea of what that means, here's how the current test run is faring on a machine with 7 cores available.  Five of the fuzzer processes have determined there is no more interesting work for them to do and closed down, while two still think there are interesting paths to explore:
+
+```
+Individual fuzzers
+==================
+
+>>> 1 (0 days, 2 hrs) <<<
+
+  cycle 1, lifetime speed 928 execs/sec, path 2241/2910 (77%)
+  pending 9/2676, coverage 3.02%, no crashes yet
+
+>>> 2 (0 days, 2 hrs) <<<
+
+  Instance is dead or running remotely, skipping.
+
+>>> 3 (0 days, 2 hrs) <<<
+
+  cycle 37, lifetime speed 4128 execs/sec, path 3191/4313 (73%)
+  pending 0/9, coverage 3.02%, no crashes yet
+
+>>> 4 (0 days, 2 hrs) <<<
+
+  Instance is dead or running remotely, skipping.
+
+>>> 5 (0 days, 2 hrs) <<<
+
+  Instance is dead or running remotely, skipping.
+
+>>> 6 (0 days, 2 hrs) <<<
+
+  Instance is dead or running remotely, skipping.
+
+>>> 7 (0 days, 2 hrs) <<<
+
+  Instance is dead or running remotely, skipping.
+
+Summary stats
+=============
+
+       Fuzzers alive : 2
+      Dead or remote : 5 (excluded from stats)
+      Total run time : 0 days, 4 hours
+         Total execs : 36 million
+    Cumulative speed : 5056 execs/sec
+       Pending paths : 9 faves, 2685 total
+  Pending per fuzzer : 4 faves, 1342 total (on average)
+       Crashes found : 0 locally unique
+
+```
