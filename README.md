@@ -59,6 +59,14 @@ This will launch AFL, which will generate new test cases and track the explorati
 
 A Dockerfile is included for the convenience of users who enjoy running `docker` commands.  It uses the experimental, unreleased `bun` project to launch and manage the appropriate number of afl-fuzz invocations.
 
+## What tests are here?
+
+Currently, the Map and Set functors have a nontrivial number of tests; Map has more tests than Set.
+
+These tests use several modules from the standard library as inputs for the Make functors of Map and Set.  Int, String, Char, Nativeint, and Uchar are all potential candidates for Map keys or values, as well as Set elements.  Tests for all of these modules (although not all combinations for Map keys and values) are generated, and have an equal chance of being chosen for execution.
+
+To see the tests themselves, have a look at `test_maps.ml` and `test_sets.ml` in the `tests/` directory.
+
 # Have you found any bugs?
 
 Not yet!
