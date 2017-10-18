@@ -69,11 +69,13 @@ To see the tests themselves, have a look at `test_maps.ml` and `test_sets.ml` in
 
 # Have you found any bugs?
 
-Not yet!
+Not in 4.05 or 4.06!  When run against 4.04.0, known problems with the Set module (fixed in 4.04.1) are discovered by these tests.
 
 ## How hard are you looking?
 
-As of commit `7a62b7`, no bugs have been found (although a test run is currently in progress).  To get a better idea of what that means, here's how the current test run is faring on a machine with 7 cores available.  Five of the fuzzer processes have determined there is no more interesting work for them to do and closed down, while two still think there are interesting paths to explore:
+As of commit `4018c4`, no bugs in OCaml 4.06.0+beta2 had been found (although a test run is likely in progress this very moment).
+
+To get a better idea of what that means, here's how the test run in progress at the time of this document's writing was faring on a machine with 7 cores available.  Five of the fuzzer processes have determined there is no more interesting work for them to do and closed down, while two still think there are interesting paths to explore:
 
 ```
 Individual fuzzers
