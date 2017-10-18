@@ -6,7 +6,7 @@ BASE_PACKAGES = crowbar,fmt
 .PHONY: all clean
 all: $(TESTS) $(COMPILER_406)
 clean:
-	rm -f $(TESTS) alltests
+	rm -f $(TESTS) $(COMPILER_406) alltests basetests
 
 $(COMPILER_406): %: shims.ml test_%_base.ml test_%_406.ml
 	ocamlfind ocamlopt -w +A-4-41-42-44-45 -package $(BASE_PACKAGES) $(PKG_$*) -linkpkg $^ -o $@
