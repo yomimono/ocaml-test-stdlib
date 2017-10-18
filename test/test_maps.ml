@@ -87,12 +87,15 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
       ~pp:pp_map
 
     let check_add m (k, v) =
-      match Map.find_opt k m with
-      | Some v' when v' == v -> phy_eq m @@ Map.add k v m
-      | None | Some _ -> (* any previous value will be overwritten by first
-                            [add] *)
+      let add_check m (k, v) =
         let m_with_v = Map.add k v m in
         phy_eq m_with_v @@ Map.add k v m_with_v
+      in
+      try
+        if Map.find k m == v then phy_eq m @@ Map.add k v m
+        else add_check m (k, v)
+      with
+      | Not_found -> add_check m (k, v)
 
     let check_remove m k =
         match Map.mem k m with
