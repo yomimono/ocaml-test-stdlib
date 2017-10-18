@@ -14,6 +14,7 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
       Map ([set; set], Set.union);
       Map ([set; set], Set.inter);
       Map ([set; set], Set.diff);
+      Map ([set], Set.map G.transform);
       Map ([set], Set.filter (fun _ -> true));
       Map ([set], fun s -> Set.partition (fun _ -> true) s |> fst);
       Map ([G.gen; set], (fun e s ->
@@ -56,6 +57,9 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
   let check_map_equality s =
     Crowbar.check_eq ~eq:(==) s (Set.map (fun a -> a) s)
 
+  let check_filter_equality s =
+    Crowbar.check_eq ~eq:(==) s (Set.filter (fun _ -> true) s)
+
   let check_map s =
     let s' = Set.map G.transform s in
     all_in ~source:s ~search:s' ~f:G.transform |> Crowbar.check
@@ -97,6 +101,8 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
       check_remove_equality;
     Crowbar.add_test ~name:"Set.map with identity function preserves physical \
                             equality" Crowbar.[set] check_map_equality;
+    Crowbar.add_test ~name:"Set.filter with identity function preserves physical \
+                            equality" Crowbar.[set] check_filter_equality;
     Crowbar.add_test ~name:"Set.map represents f(x) for all items in the input \
                             set" Crowbar.[set] check_map;
     Crowbar.add_test ~name:"Set.union contains each element in both sets"
