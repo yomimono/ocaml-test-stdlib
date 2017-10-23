@@ -16,4 +16,4 @@ ADD . /home/opam/ocaml-test-stdlib
 RUN sudo chown -R opam /home/opam/ocaml-test-stdlib
 WORKDIR /home/opam/ocaml-test-stdlib/test
 RUN opam config exec -- make alltests
-ENTRYPOINT opam config exec -- bun -i input -o output -v ./alltests
+ENTRYPOINT opam config exec -- timeout --preserve-status 25m bun -i input -o output -v ./alltests
