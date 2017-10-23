@@ -5,6 +5,10 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
   let all_in ~f ~search ~source =
     Set.for_all (fun e -> Set.mem (f e) search) source
 
+  let pp_set f s =
+    let pp_setlist = Fmt.list G.pp in
+    pp_setlist f (Set.elements s)
+
   let rec set : Set.t Crowbar.gen = Crowbar.(Choose [
       Const Set.empty;
       Map ([List1 G.gen], Set.of_list);
@@ -81,8 +85,12 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
     | 0, true ->
       (* if the set contains only our element, split should represent that in
          neither l nor r, so we expect equal empty sets for l and r *)
-      Crowbar.check_eq ~cmp:Set.compare s @@ Set.singleton elt
-    | n, _ -> Crowbar.check (n < 0)
+      Crowbar.check_eq ~cmp:Set.compare ~pp:pp_set s @@ Set.singleton elt
+    | n, _ when n > 0 ->
+      (* this should only ever happen when r is the empty set and l isn't *)
+      Crowbar.check_eq ~cmp:Set.compare ~pp:pp_set r Set.empty 
+    | n, _ ->
+      Crowbar.check (n > 0)
 
   let check_split_element s elt =
     let _l, present, _r = Set.split elt s in
