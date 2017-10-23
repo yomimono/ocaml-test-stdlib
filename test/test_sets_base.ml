@@ -100,6 +100,13 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
     let l, _present, r = Set.split elt s in
     Crowbar.check_eq false (Set.mem elt l && Set.mem elt r)
 
+  let check_choose s =
+    let s' = s in
+    try
+      Crowbar.check_eq ~cmp:Elt.compare ~pp:G.pp (Set.choose s) (Set.choose s')
+    with
+    | Not_found -> Crowbar.check (Set.is_empty s)
+
   let add_tests () =
     Crowbar.add_test ~name:"Set.split strictly splits on the given element"
       Crowbar.[set; G.gen] check_split_ordering;
@@ -123,9 +130,11 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
                             equality" Crowbar.[set] check_filter_equality;
     Crowbar.add_test ~name:"Set.map represents f(x) for all items in the input \
                             set" Crowbar.[set] check_map;
-    Crowbar.add_test ~name:"min_elt and max_elt are equal only for sets with \
+    Crowbar.add_test ~name:"Set.min_elt and max_elt are equal only for sets with \
                             one element" Crowbar.[set]
       max_min_implies_singleton;
+    Crowbar.add_test ~name:"Set.choose returns equal elements for equal sets"
+      Crowbar.[set] check_choose;
 
 end
 
