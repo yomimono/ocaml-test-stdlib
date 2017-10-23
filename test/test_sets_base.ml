@@ -64,30 +64,13 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
     let s' = Set.map G.transform s in
     all_in ~source:s ~search:s' ~f:G.transform |> Crowbar.check
 
-  let check_union s1 s2 =
-    let u = Set.union s1 s2 in
-    ((all_in ~f:(fun a -> a) ~source:s1 ~search:u) &&
-     (all_in ~f:(fun a -> a) ~source:s2 ~search:u)) |> Crowbar.check
-
-  let check_intersection s1 s2 =
-    let i = Set.inter s1 s2 in
-    (* everything in i should be in both s1 and s2 *)
-    ((all_in ~f:(fun a -> a) ~source:i ~search:s1) &&
-    (all_in ~f:(fun a -> a) ~source:i ~search:s2) &&
-    (* everything that is in s1 and is also in s2 should be in i *)
-    (all_in ~f:(fun a -> a) ~source:(Set.filter (fun e -> Set.mem e s2) s1)
-       ~search:i) &&
-    (* everything that is in s2 and is also in s1 should be in i *)
-    (all_in ~f:(fun a -> a) ~source:(Set.filter (fun e -> Set.mem e s1) s2)
-       ~search:i)) |> Crowbar.check
-
-  let check_diff s1 s2 =
-    let d = Set.diff s1 s2 in
-    (* all items in s1, if not in s2, should be present in d *)
-    ((all_in ~f:(fun a -> a) ~source:(Set.filter (fun e -> not (Set.mem e s2)) s1)
-       ~search:d) &&
-    (* no items in both s1 and s2 should be in d *)
-    Set.(is_empty (inter d @@ inter s1 s2))) |> Crowbar.check
+  let max_min_implies_singleton s =
+    try
+      match Set.min_elt s, Set.max_elt s with
+      | x, y when x = y -> Crowbar.check_eq 1 @@ Set.cardinal s
+      | x, y -> (Elt.compare x y) < 0 |> Crowbar.check
+    with
+    | Not_found -> Crowbar.check @@ Set.is_empty s
 
   let add_tests () =
     Crowbar.add_test ~name:"Set.min >= Set.max only when the set has 1 element"
@@ -105,13 +88,9 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
                             equality" Crowbar.[set] check_filter_equality;
     Crowbar.add_test ~name:"Set.map represents f(x) for all items in the input \
                             set" Crowbar.[set] check_map;
-    Crowbar.add_test ~name:"Set.union contains each element in both sets"
-      Crowbar.[set; set] check_union;
-    Crowbar.add_test ~name:"Set.inter contains every element in both \
-                            sets" Crowbar.[set; set] check_intersection;
-    Crowbar.add_test ~name:"Set.diff contains only elements in first set not \
-                            present in the second set" Crowbar.[set; set]
-      check_diff;
+    Crowbar.add_test ~name:"min_elt and max_elt are equal only for sets with \
+                            one element" Crowbar.[set]
+      max_min_implies_singleton;
 
 end
 
