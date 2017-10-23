@@ -72,7 +72,34 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
     with
     | Not_found -> Crowbar.check @@ Set.is_empty s
 
+  let check_split_ordering s elt =
+    let l, present, r = Set.split elt s in
+    match Set.compare l r, present with
+    | 0, false ->
+      (* splitting the empty set gives 2 empty sets, which will be equal *)
+      Crowbar.check @@ Set.is_empty s
+    | 0, true ->
+      (* if the set contains only our element, split should represent that in
+         neither l nor r, so we expect equal empty sets for l and r *)
+      Crowbar.check_eq ~cmp:Set.compare s @@ Set.singleton elt
+    | n, _ -> Crowbar.check (n < 0)
+
+  let check_split_element s elt =
+    let _l, present, _r = Set.split elt s in
+    Crowbar.check_eq present (Set.mem elt s)
+
+  let check_split_echo s elt =
+    let l, _present, r = Set.split elt s in
+    Crowbar.check_eq false (Set.mem elt l && Set.mem elt r)
+
   let add_tests () =
+    Crowbar.add_test ~name:"Set.split strictly splits on the given element"
+      Crowbar.[set; G.gen] check_split_ordering;
+    Crowbar.add_test ~name:"Set.split correctly reports element presence in the \
+                            original set" Crowbar.[set; G.gen] check_split_element;
+    Crowbar.add_test ~name:"Set.split does not include the split element in \
+                            either set returned" Crowbar.[set; G.gen]
+      check_split_echo;
     Crowbar.add_test ~name:"Set.min >= Set.max only when the set has 1 element"
       Crowbar.[set] check_min_max;
     Crowbar.add_test ~name:"Set.add never results in a set with fewer elements"
