@@ -7,7 +7,7 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
 
   let rec set : Set.t Crowbar.gen = Crowbar.(Choose [
       Const Set.empty;
-      Map ([List G.gen], Set.of_list);
+      Map ([List1 G.gen], Set.of_list);
       Map ([G.gen; set], Set.add);
       Map ([G.gen; set], Set.remove);
       Map ([G.gen], Set.singleton);
