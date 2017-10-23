@@ -1,6 +1,6 @@
-FROM bun:latest as bun
+FROM yomimono/bun:latest as bun
 
-FROM afl:2.51b as afl
+FROM yomimono/afl:2.51b as afl
 
 FROM ocaml/opam:debian-9_ocaml-4.06.0_beta2_afl as opam
 RUN opam config exec -- opam install -y fmt
