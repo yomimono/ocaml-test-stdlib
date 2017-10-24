@@ -1,11 +1,10 @@
-FROM yomimono/bun:latest as bun
+FROM yomimono/bun:6bcbfc3a6dc003719756b6d96b078061af0de481 as bun
 
 FROM yomimono/afl:2.51b as afl
 
 FROM yomimono/opam:debian-9_ocaml-4.06.0_beta2_afl as opam
 RUN opam config exec -- opam install -y fmt
-RUN opam config exec -- opam pin add -y afl-persistent https://github.com/yomimono/ocaml-afl-persistent.git#persist-less
-RUN opam config exec -- opam pin add -y crowbar https://github.com/yomimono/crowbar.git#4.06.0-ready
+RUN opam config exec -- opam pin add -y crowbar https://github.com/yomimono/crowbar.git#greatest_justice
 
 COPY --from=bun /home/opam/bun /usr/local/bin/
 COPY --from=afl /usr/local/bin/afl-fuzz /usr/local/bin/
