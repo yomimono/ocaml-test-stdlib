@@ -1,3 +1,5 @@
+[![travis CI build status badge](https://travis-ci.org/yomimono/ocaml-test-stdlib.svg?branch=primary)](https://travis-ci.org/yomimono/ocaml-test-stdlib/)
+
 # What is this?
 
 This repository contains property-based tests of a subset of the [OCaml](https://ocaml.org) standard library.  The tests use the [crowbar](https://github.com/stedolan/crowbar) framework and are intended for use with the [American Fuzzy Lop](https://lcamtuf.coredump.cx/afl) program fuzzer.
