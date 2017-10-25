@@ -59,7 +59,7 @@ This will launch AFL, which will generate new test cases and track the explorati
 
 ### Whales
 
-A Dockerfile is included for the convenience of users who enjoy running `docker` commands.  It uses the experimental, unreleased `bun` project to launch and manage the appropriate number of afl-fuzz invocations.
+A Dockerfile is included for the convenience of users who enjoy running `docker` commands.  It uses [ocaml-bun](https://github.com/yomimono/ocaml-bun) to launch and manage the appropriate number of `afl-fuzz` invocations.
 
 ## What tests are here?
 
