@@ -71,7 +71,7 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
   let max_min_implies_singleton s =
     try
       match Set.min_elt s, Set.max_elt s with
-      | x, y when x = y -> Crowbar.check_eq 1 @@ Set.cardinal s
+      | x, y when 0 = Elt.compare x y -> Crowbar.check_eq 1 @@ Set.cardinal s
       | x, y -> (Elt.compare x y) < 0 |> Crowbar.check
     with
     | Not_found -> Crowbar.check @@ Set.is_empty s
