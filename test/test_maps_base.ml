@@ -161,12 +161,14 @@ module Make_generator(K: Shims.GENERABLE)(V: Shims.GENERABLE) = struct
 end
 module StringString = Make_generator(Shims.String)(Shims.String)
 module IntString = Make_generator(Shims.Int)(Shims.String)
+module FloatString = Make_generator(Shims.Float)(Shims.String)
 module CharInt = Make_generator(Shims.Char)(Shims.Int)
 module NativeintInt = Make_generator(Shims.Nativeint)(Shims.Int)
 module UcharString = Make_generator(Shims.Uchar)(Shims.String)
 
 module StringTester = Map_tester(String)(String)(StringString)
 module IntStringTester = Map_tester(Shims.OrdInt)(String)(IntString)
+module FloatStringTester = Map_tester(Shims.OrdFloat)(String)(FloatString)
 module CharIntTester = Map_tester(Char)(Shims.OrdInt)(CharInt)
 module NativeIntTester = Map_tester(Nativeint)(Shims.OrdInt)(NativeintInt)
 module UcharStringTester = Map_tester(Uchar)(String)(UcharString)

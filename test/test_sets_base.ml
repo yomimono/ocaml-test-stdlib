@@ -143,6 +143,7 @@ module NativeintTester = Set_tester(Nativeint)(Shims.Nativeint)
 module StringTester = Set_tester(String)(Shims.String)
 module IntTester = Set_tester(Shims.OrdInt)(Shims.Int)
 module CharTester = Set_tester(Char)(Shims.Char)
+module FloatTester = Set_tester(Shims.OrdFloat)(Shims.Float)
 
 let () =
   UcharTester.add_tests ();
@@ -150,3 +151,4 @@ let () =
   StringTester.add_tests ();
   IntTester.add_tests ();
   CharTester.add_tests ();
+  FloatTester.add_tests ();

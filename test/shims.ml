@@ -3,6 +3,11 @@ module OrdInt = struct
   let compare (i : int) (j : int) = compare i j
 end
 
+module OrdFloat = struct
+  type t = float
+  let compare (i : float) (j : float) = compare i j
+end
+
 module type GENERABLE = sig
   type t
   val gen : t Crowbar.gen
@@ -53,4 +58,10 @@ module Uchar = struct
   let transform n =
     try Uchar.succ n
     with Invalid_argument _ -> Uchar.pred n
+end
+module Float = struct
+  type t = float
+  let gen = Crowbar.float
+  let pp = Fmt.float
+  let transform f = -. f
 end
