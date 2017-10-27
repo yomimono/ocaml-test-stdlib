@@ -46,13 +46,13 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
   let add_tests () =
     Update.(
       Crowbar.add_test ~name:"destructive updates always shadow existing bindings"
-        Crowbar.[map; pair] destructive_binding;
+        Crowbar.[map_gen; pair] destructive_binding;
       Crowbar.add_test ~name:"non-destructive updates never shadow existing bindings"
-        Crowbar.[map; pair] nondestructive_binding;
+        Crowbar.[map_gen; pair] nondestructive_binding;
       Crowbar.add_test ~name:"replacing does not create new bindings"
-        Crowbar.[map; pair] replace;
+        Crowbar.[map_gen; pair] replace;
       Crowbar.add_test ~name:"delete-if-present transformation works"
-        Crowbar.[map; pair] delete_extant_bind_new;
+        Crowbar.[map_gen; pair] delete_extant_bind_new;
     )
 end
 module StringString = Maps.Make_generator(Shims.String)(Shims.String)

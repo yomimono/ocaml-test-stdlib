@@ -9,22 +9,24 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
     let pp_setlist = Fmt.list G.pp in
     pp_setlist f (Set.elements s)
 
-  let rec set : Set.t Crowbar.gen = Crowbar.(Choose [
-      Const Set.empty;
-      Map ([List1 G.gen], Set.of_list);
-      Map ([G.gen; set], Set.add);
-      Map ([G.gen; set], Set.remove);
-      Map ([G.gen], Set.singleton);
-      Map ([set; set], Set.union);
-      Map ([set; set], Set.inter);
-      Map ([set; set], Set.diff);
-      Map ([set], Set.map G.transform);
-      Map ([set], Set.filter (fun _ -> true));
-      Map ([set], fun s -> Set.partition (fun _ -> true) s |> fst);
-      Map ([G.gen; set], (fun e s ->
+  let rec set = lazy (Crowbar.(choose [
+      const Set.empty;
+      map [list1 G.gen] Set.of_list;
+      map [G.gen; (unlazy set)] Set.add;
+      map [G.gen; (unlazy set)] Set.remove;
+      map [G.gen] Set.singleton;
+      map [(unlazy set); (unlazy set)] Set.union;
+      map [(unlazy set); (unlazy set)] Set.inter;
+      map [(unlazy set); (unlazy set)] Set.diff;
+      map [(unlazy set)] (Set.map G.transform);
+      map [(unlazy set)] (Set.filter (fun _ -> true));
+      map [(unlazy set)] (fun s -> Set.partition (fun _ -> true) s |> fst);
+      map [G.gen; (unlazy set)] ((fun e s ->
           let l, _, r = Set.split e s in
           Set.union l r));
-    ])
+    ]))
+
+  let lazy set = set
 
   let check_min_max s =
     match Set.(min_elt s, max_elt s) with

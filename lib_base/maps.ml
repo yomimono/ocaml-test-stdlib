@@ -15,7 +15,7 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
   module Map = Map.Make(KeyOrder)
 
   let pair : (G.key * G.value) Crowbar.gen
-    = Crowbar.(Map ([G.key_gen; G.val_gen], fun x y -> x, y))
+    = Crowbar.(map [G.key_gen; G.val_gen] (fun x y -> x, y))
 
   let pp_map f m =
     let pairsep = Fmt.(const string " -> ") in
@@ -42,34 +42,37 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
         | Some v, None | None, Some v -> Some v
         | Some _, Some _ -> None)
 
-  let rec map =
-    Crowbar.(Choose [
-        Const Map.empty;
-        Map ([G.key_gen; G.val_gen], Map.singleton);
-        Map ([List pair], fun items ->
+  let rec map_gen = lazy (
+    Crowbar.(choose [
+        const Map.empty;
+        map [G.key_gen; G.val_gen] Map.singleton;
+        map [list pair] (fun items ->
             List.fold_left (fun m (k, v) -> Map.add k v m) Map.empty items);
-        Map ([map; map], fun m1 m2 ->
+        map [(unlazy map_gen); (unlazy map_gen)] (fun m1 m2 ->
             Map.union (fun _key val1 val2 -> largest val1 val2) m1 m2);
-        Map ([map; G.key_gen], fun m k -> Map.remove k m);
-        Map ([map; pair], fun m (k, v) -> Map.add k v m);
-        Map ([map; map], disjunction); (* Map.merge *)
-        Map ([map; List pair], fun map l ->
+        map [(unlazy map_gen); G.key_gen] (fun m k -> Map.remove k m);
+        map [(unlazy map_gen); pair] (fun m (k, v) -> Map.add k v m);
+        map [(unlazy map_gen); (unlazy map_gen)] disjunction; (* Map.merge *)
+        map [(unlazy map_gen); list pair] (fun map l ->
              Map.filter (fun k v -> try
                             0 = ValueOrder.compare v @@ List.assoc k l
                           with Not_found -> false
                         ) map);
-        Map ([map; List pair], fun map l ->
+        map [(unlazy map_gen); list pair] (fun map l ->
              snd @@ Map.partition (fun k v -> try
                             0 = ValueOrder.compare v @@ List.assoc k l
                           with Not_found -> false
                                   ) map);
-        Map ([map; G.key_gen], fun m k ->
-            (* we could test whether this is equivalent to Map.remove k m *)
+        map [(unlazy map_gen); G.key_gen] (fun m k ->
+            (* we could test whether this is equivalent to map.remove k m *)
             let l, _, r = Map.split k m in
             disjunction r l);
-        Map ([map], fun m -> Map.map G.value_transform m);
-        Map ([map], fun m -> Map.mapi (fun _ a -> G.value_transform a) m);
+        map [(unlazy map_gen)] (fun m -> Map.map G.value_transform m);
+        map [(unlazy map_gen)] (fun m -> Map.mapi (fun _ a -> G.value_transform a) m);
       ])
+  )
+
+  let lazy map_gen = map_gen
 
   let check_bounds map =
     match Map.min_binding map, Map.max_binding map with
@@ -134,20 +137,20 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
 
   let add_tests () =
     Crowbar.add_test ~name:"max_binding = min_binding implies all elements are equal"
-      Crowbar.[map] check_bounds;
+      Crowbar.[map_gen] check_bounds;
     Equality.(
       Crowbar.add_test ~name:"removing a key that isn't bound preserves physical \
-                              equality" Crowbar.[map; G.key_gen] check_remove;
+                              equality" Crowbar.[map_gen; G.key_gen] check_remove;
       Crowbar.add_test ~name:"filtering which keeps all elements retains physical \
-                              equality" Crowbar.[map] check_filter;
+                              equality" Crowbar.[map_gen] check_filter;
       Crowbar.add_test ~name:"choose gets the same binding for same maps"
-        Crowbar.[map] check_choose;
+        Crowbar.[map_gen] check_choose;
       Crowbar.add_test ~name:"add of a physically equal element gets a physically \
-                              equal map" Crowbar.[map; pair] check_add;
+                              equal map" Crowbar.[map_gen; pair] check_add;
     );
     Union.(
       Crowbar.add_test ~name:"Map.union is special case of Map.merge as claimed"
-        Crowbar.[map; map] union_largest
+        Crowbar.[map_gen; map_gen] union_largest
     );
 
 end
