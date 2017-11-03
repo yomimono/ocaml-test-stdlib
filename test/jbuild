@@ -1,0 +1,32 @@
+(jbuild_version 1)
+
+(executable
+ ((name basetests)
+  (libraries (crowbar fmt stdlibtest))
+  (modules basetests)
+  (modes (native))
+ ))
+
+(executable
+ ((name alltests)
+  (libraries (crowbar fmt stdlibtest stdlibtest_406))
+  (modules (alltests))
+  (modes (native))
+  ))
+
+(alias
+ ((name runtest)
+  (action (run ${exe:alltests.exe}))))
+
+(alias
+ ((name basetests)
+  (action (run ${exe:basetests.exe}))))
+
+(alias
+ ((name fuzz)
+  (deps (alltests.exe (files_recursively_in input)))
+  (action (run 
+    "bun" "-v"
+    "--input=input"
+    "--output=output"
+    "--" ./alltests.exe))))

@@ -1,6 +1,8 @@
+open Stdlibtest
+
 module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
-    (G: Test_maps_base.GENERATOR with type key = KeyOrder.t and type value = ValueOrder.t) = struct
-  include Test_maps_base.Map_tester(KeyOrder)(ValueOrder)(G)
+    (G: Maps.GENERATOR with type key = KeyOrder.t and type value = ValueOrder.t) = struct
+  include Maps.Map_tester(KeyOrder)(ValueOrder)(G)
   module Update = struct
     let val_eq = Crowbar.check_eq ~cmp:ValueOrder.compare ~pp:G.pp_value
 
@@ -53,11 +55,11 @@ module Map_tester(KeyOrder: Map.OrderedType)(ValueOrder: Map.OrderedType)
         Crowbar.[map; pair] delete_extant_bind_new;
     )
 end
-module StringString = Test_maps_base.Make_generator(Shims.String)(Shims.String)
-module IntString = Test_maps_base.Make_generator(Shims.Int)(Shims.String)
-module CharInt = Test_maps_base.Make_generator(Shims.Char)(Shims.Int)
-module NativeintInt = Test_maps_base.Make_generator(Shims.Nativeint)(Shims.Int)
-module UcharString = Test_maps_base.Make_generator(Shims.Uchar)(Shims.String)
+module StringString = Maps.Make_generator(Shims.String)(Shims.String)
+module IntString = Maps.Make_generator(Shims.Int)(Shims.String)
+module CharInt = Maps.Make_generator(Shims.Char)(Shims.Int)
+module NativeintInt = Maps.Make_generator(Shims.Nativeint)(Shims.Int)
+module UcharString = Maps.Make_generator(Shims.Uchar)(Shims.String)
 
 module StringTester = Map_tester(String)(String)(StringString)
 module IntStringTester = Map_tester(Shims.OrdInt)(String)(IntString)

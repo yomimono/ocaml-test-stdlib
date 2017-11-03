@@ -1,0 +1,6 @@
+(jbuild_version 1)
+
+(library
+ ((name stdlibtest_406)
+ (libraries (stdlibtest crowbar fmt))
+ ))

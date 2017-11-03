@@ -172,10 +172,3 @@ module FloatStringTester = Map_tester(Shims.OrdFloat)(String)(FloatString)
 module CharIntTester = Map_tester(Char)(Shims.OrdInt)(CharInt)
 module NativeIntTester = Map_tester(Nativeint)(Shims.OrdInt)(NativeintInt)
 module UcharStringTester = Map_tester(Uchar)(String)(UcharString)
-
-let () =
-  StringTester.add_tests ();
-  IntStringTester.add_tests ();
-  CharIntTester.add_tests ();
-  NativeIntTester.add_tests ();
-  UcharStringTester.add_tests ();

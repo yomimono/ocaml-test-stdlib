@@ -144,11 +144,3 @@ module StringTester = Set_tester(String)(Shims.String)
 module IntTester = Set_tester(Shims.OrdInt)(Shims.Int)
 module CharTester = Set_tester(Char)(Shims.Char)
 module FloatTester = Set_tester(Shims.OrdFloat)(Shims.Float)
-
-let () =
-  UcharTester.add_tests ();
-  NativeintTester.add_tests ();
-  StringTester.add_tests ();
-  IntTester.add_tests ();
-  CharTester.add_tests ();
-  FloatTester.add_tests ();

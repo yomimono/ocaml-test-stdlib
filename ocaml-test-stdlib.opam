@@ -1,0 +1,18 @@
+opam-version: "1.2"
+maintainer: "git@identity-function.com"
+authors: ["Mindy Preston"]
+homepage: "https://github.com/yomimono/ocaml-test-stdlib"
+bug-reports: "https://github.com/yomimono/ocaml-test-stdlib/issues"
+dev-repo: "https://github.com/yomimono/ocaml-test-stdlib.git"
+license: "MIT"
+build:
+[[ "jbuilder" "build" "-j" jobs "@install" ]]
+build-test:
+[[ "jbuilder" "build" "-j" jobs "@runtest" ]]
+available: [ ocaml-version >= "4.02" ]
+depends: [
+  "ocamlfind"
+  "jbuilder" {build}
+  "crowbar"
+  "fmt"
+]
