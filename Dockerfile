@@ -1,4 +1,4 @@
-FROM yomimono/bun:902e9956c9eb49f24889cc0a05797823cbbcef6d as bun
+FROM yomimono/bun:0cdbbd1fd0926a816e45b13eb692b517fdf5717f as bun
 
 FROM yomimono/afl:2.51b as afl
 
