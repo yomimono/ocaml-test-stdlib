@@ -1,8 +1,8 @@
-FROM yomimono/bun:0cdbbd1fd0926a816e45b13eb692b517fdf5717f as bun
+FROM yomimono/bun:fc7925cf637bf1d72efb681c57f2d2e19f1a3b1a as bun
 
-FROM yomimono/afl:2.51b as afl
+FROM yomimono/afl:2.52b as afl
 
-FROM yomimono/opam:debian-9_ocaml-4.06.0_beta2_afl as opam
+FROM yomimono/opam:debian-9_ocaml-4.06.0_afl as opam
 RUN opam config exec -- opam install -y fmt
 RUN opam config exec -- opam pin add -y crowbar https://github.com/yomimono/crowbar.git#greatest_justice
 
