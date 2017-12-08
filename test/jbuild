@@ -24,9 +24,10 @@
 
 (alias
  ((name fuzz)
-  (deps (alltests.exe (files_recursively_in input)))
+  (deps (basetests.exe (files_recursively_in input)))
   (action (run 
+    "timeout" "--preserve-status" "25m"
     "bun" "-v"
     "--input=input"
     "--output=output"
-    "--" ./alltests.exe))))
+    "--" ./basetests.exe))))

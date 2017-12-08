@@ -1,15 +1,26 @@
-sudo: required
-
 language: c
 
-services:
-- docker
+env:
+        global:
+                - HUB_USER=yomimono
+                - DISTRO=debian-9
+                - PACKAGE=ocaml-test-stdlib
+                - INSTALL=false
+                - PINS="crowbar:https://github.com/yomimono/crowbar.git#greatest_justice bun:https://github.com/yomimono/ocaml-bun.git spawn:https://github.com/yomimono/spawn.git#pthread"
+        matrix:
+                # docker hub (the ultimate source of the base images) doesn't allow + in names, hence the _
+                - OCAML_VERSION=4.04.0_afl
+                - OCAML_VERSION=4.05.0_afl
+                - OCAML_VERSION=4.06.0_afl
+matrix:
+        allow_failures:
+                env:
+                # Set.Map in 4.04 is detected by these tests
+                - OCAML_VERSION=4.04.0_afl
 
 before_install:
 - sudo sysctl kernel.core_pattern=core
-- sudo apt-get update
-- sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
-- docker build -t alltests:latest .
 
-script:
-- docker run alltests:latest
+install: wget https://raw.githubusercontent.com/yomimono/ocaml-ci-scripts/custom-hub-user/.travis-docker.sh
+
+script: bash -ex .travis-docker.sh
