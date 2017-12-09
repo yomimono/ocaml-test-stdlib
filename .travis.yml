@@ -14,9 +14,8 @@ env:
                 - OCAML_VERSION=4.06.0_afl
 matrix:
         allow_failures:
-                env:
                 # Set.Map in 4.04 is detected by these tests
-                - OCAML_VERSION=4.04.0_afl
+                - env: OCAML_VERSION=4.04.0_afl
 
 before_install:
 - sudo sysctl kernel.core_pattern=core

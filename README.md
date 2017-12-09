@@ -24,20 +24,16 @@ Crowbar tests have two modes:
 
 ```
 $ cd ocaml-test-stdlib/
-$ cd test
-$ make alltests
-ocamlfind ocamlopt -package crowbar \
-  -package fmt -package fmt \
-  -linkpkg \
-  shims.ml test_maps.ml test_sets.ml -o alltests
+$ jbuilder build test/alltests.exe #if your compiler is 4.06.0
+$ jbuilder build test/basetests.exe #if your compiler is 4.04.* or 4.05.*
 ```
 
 ## fully random test mode
 
-If you wish to use the quickcheck-like, fully random mode to run all tests distributed here, build the tests as above and then run the `alltests` binary with no arguments.
+If you wish to use the quickcheck-like, fully random mode to run all tests distributed here, build the tests as above and then run the binary with no arguments.
 
 ```
-$ ./alltests | head -5
+$ _build/default/test/basetests.exe | head -5 #substitute alltests for basetests on 4.06.0
 max_binding = min_binding implies all elements are equal: PASS
 
 removing a key that isn't bound preserves physical equality: PASS
@@ -49,13 +45,19 @@ filtering which keeps all elements retains physical equality: PASS
 
 To run the tests in AFL mode, you'll need to install American Fuzzy Lop ([latest source tarball](http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz), although your distribution may also have a package available).
 
-Once `afl-fuzz` is available on your system, create an `input` directory with a non-empty file in it (or use `tests/input`, conveniently provided in this repository), and an `output` directory for `afl-fuzz` to store its findings:
+Once `afl-fuzz` is available on your system, create an `input` directory with a non-empty file in it (or use `test/input`, conveniently provided in this repository), and an `output` directory for `afl-fuzz` to store its findings:
 
 ```
-afl-fuzz -i input -o output ./alltests @@
+afl-fuzz -i test/input -o output _build/default/test/basetests.exe @@
 ```
 
 This will launch AFL, which will generate new test cases and track the exploration of the state space.  When inputs are discovered which cause a property not to hold, they will be reported as crashes (along with actual crashes, although in the OCaml standard library these are rare).  See the [afl-fuzz documentation](https://lcamtuf.coredump.cx/afl/status_screen.txt) for more on AFL's excellent interface.
+
+For convenience, there is an alias defined for fuzzing `basetests.exe` in `test/jbuild`.  It is recommended to invoke this alias with `--no-buffer`, as otherwise the user gets no feedback while the tests are running (apart from fan noise!):
+
+```
+jbuilder build @test/fuzz --no-buffer
+```
 
 ### Whales
 
