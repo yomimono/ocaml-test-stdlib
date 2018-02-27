@@ -20,6 +20,6 @@ matrix:
 before_install:
 - sudo sysctl kernel.core_pattern=core
 
-install: wget https://raw.githubusercontent.com/yomimono/ocaml-ci-scripts/custom-hub-user/.travis-docker.sh
+install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-docker.sh
 
 script: bash -ex .travis-docker.sh
