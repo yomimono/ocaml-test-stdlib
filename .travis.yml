@@ -6,7 +6,7 @@ env:
                 - DISTRO=debian-9
                 - PACKAGE=ocaml-test-stdlib
                 - INSTALL=false
-                - PINS="crowbar:https://github.com/yomimono/crowbar.git#stack-overflow bun:https://github.com/yomimono/ocaml-bun.git spawn:https://github.com/yomimono/spawn.git#pthread"
+                - PINS="bun:https://github.com/yomimono/ocaml-bun.git"
         matrix:
                 # docker hub (the ultimate source of the base images) doesn't allow + in names, hence the _
                 - OCAML_VERSION=4.04.0_afl
