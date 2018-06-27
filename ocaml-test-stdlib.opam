@@ -14,5 +14,6 @@ depends: [
   "jbuilder" {build}
   "bun"
   "crowbar"
+  "base"
   "fmt"
 ]
