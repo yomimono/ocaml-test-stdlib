@@ -6,6 +6,7 @@ env:
                 - DISTRO=debian-9
                 - PACKAGE=ocaml-test-stdlib
                 - INSTALL=false
+                - OPAMYES=true
         matrix:
                 # docker hub (the ultimate source of the base images) doesn't allow + in names, hence the _
                 - OCAML_VERSION=4.04.0_afl
@@ -15,6 +16,6 @@ env:
 before_install:
 - sudo sysctl kernel.core_pattern=core
 
-install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-docker.sh
+install: wget https://raw.githubusercontent.com/yomimono/ocaml-ci-scripts/depext-y/.travis-docker.sh
 
 script: bash -ex .travis-docker.sh
