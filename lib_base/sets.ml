@@ -1,28 +1,30 @@
-module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
-= struct
-  module Set = Set.Make(Elt)
+open Base
 
-  let all_in ~f ~search ~source =
-    Set.for_all (fun e -> Set.mem (f e) search) source
+module Set_tester(Elt: Shims.Comparably_buildable) (G: Shims.GENERABLE with type t = Elt.t)
+= struct
+  module EltComparison = Comparable.Make_using_comparator(Elt)
+
+  let all_in ~fn ~search ~source =
+    Set.for_all ~f:(fun e -> Set.mem search (fn e)) source
 
   let pp_set f s =
     let pp_setlist = Fmt.list G.pp in
     pp_setlist f (Set.elements s)
 
   let rec set = lazy (Crowbar.(choose [
-      const Set.empty;
-      map [list1 G.gen] Set.of_list;
-      map [G.gen; (unlazy set)] Set.add;
-      map [G.gen; (unlazy set)] Set.remove;
-      map [G.gen] Set.singleton;
+      const @@ Set.empty (module Elt);
+      map [list1 G.gen] @@ Set.of_list (module Elt);
+      map [(unlazy set); G.gen] Set.add;
+      map [(unlazy set); G.gen] Set.remove;
+      map [G.gen] @@ Set.singleton (module Elt);
       map [(unlazy set); (unlazy set)] Set.union;
       map [(unlazy set); (unlazy set)] Set.inter;
       map [(unlazy set); (unlazy set)] Set.diff;
-      map [(unlazy set)] (Set.map G.transform);
-      map [(unlazy set)] (Set.filter (fun _ -> true));
-      map [(unlazy set)] (fun s -> Set.partition (fun _ -> true) s |> fst);
+      map [(unlazy set)] (fun s -> Set.map (module Elt) s ~f:G.transform);
+      map [(unlazy set)] (fun s -> Set.filter s ~f:(fun _ -> true));
+      map [(unlazy set)] (fun s -> Set.partition_tf s ~f:(fun _ -> true) |> fst);
       map [G.gen; (unlazy set)] ((fun e s ->
-          let l, _, r = Set.split e s in
+          let l, _, r = Set.split s e  in
           Set.union l r));
     ]))
 
@@ -30,84 +32,63 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
 
   let check_min_max s =
     match Set.(min_elt s, max_elt s) with
-    | min, max when Elt.compare min max = 0 ->
-      Crowbar.check_eq 1 @@ Set.cardinal s
-    | min, max -> Elt.compare max min > 0 |> Crowbar.check
-    | exception Not_found -> Crowbar.check @@ Set.is_empty s
+    | Some min, Some max when EltComparison.compare min max = 0 ->
+      Crowbar.check_eq 1 @@ Set.length s
+    | Some min, Some max -> EltComparison.compare max min > 0 |> Crowbar.check
+    | None, None -> Crowbar.check @@ Set.is_empty s
+    | Some _, None | None, Some _ -> Crowbar.fail "Set.min_elt and Set.max_elt disagree on whether the set is empty"
 
   let check_add_cardinality s elt =
-    match Set.mem elt s with
-    | true -> Crowbar.check_eq Set.(cardinal s) Set.(add elt s |> cardinal)
+    match Set.mem s elt with
+    | true -> Crowbar.check_eq Set.(length s) Set.(add s elt |> length)
     | false -> Crowbar.check_eq
-                 ((Set.cardinal s) + 1) Set.(add elt s |> cardinal)
-
-  let check_add_equality s elt =
-    match Set.mem elt s with
-    | true -> Crowbar.check_eq ~eq:(fun x y -> x == y) s (Set.add elt s)
-    | false ->
-      let s = Set.add elt s in
-      Crowbar.check_eq ~eq:(==) s (Set.add elt s)
+                 ((Set.length s) + 1) Set.(add s elt |> length)
 
   let check_remove_cardinality s elt =
     match Set.mem elt s with
-    | true -> Crowbar.check_eq ((Set.cardinal s) - 1) Set.(remove elt s |> cardinal)
-    | false -> Crowbar.check_eq Set.(cardinal s) Set.(remove elt s |> cardinal)
-
-  let check_remove_equality s elt =
-    match Set.mem elt s with
-    | false -> Crowbar.check_eq ~eq:(fun x y -> x == y) s (Set.remove elt s)
-    | true ->
-      let s = Set.remove elt s in
-      Crowbar.check_eq ~eq:(==) s (Set.remove elt s)
-
-  let check_map_equality s =
-    Crowbar.check_eq ~eq:(==) s (Set.map (fun a -> a) s)
-
-  let check_filter_equality s =
-    Crowbar.check_eq ~eq:(==) s (Set.filter (fun _ -> true) s)
+    | true -> Crowbar.check_eq ((Set.length s) - 1) Set.(remove elt s |> length)
+    | false -> Crowbar.check_eq Set.(length s) Set.(remove elt s |> length)
 
   let check_map s =
-    let s' = Set.map G.transform s in
-    all_in ~source:s ~search:s' ~f:G.transform |> Crowbar.check
-
-  let max_min_implies_singleton s =
-    try
-      match Set.min_elt s, Set.max_elt s with
-      | x, y when 0 = Elt.compare x y -> Crowbar.check_eq 1 @@ Set.cardinal s
-      | x, y -> (Elt.compare x y) < 0 |> Crowbar.check
-    with
-    | Not_found -> Crowbar.check @@ Set.is_empty s
+    let s' = Set.map (module Elt) ~f:G.transform s in
+    all_in ~source:s ~search:s' ~fn:G.transform |> Crowbar.check
 
   let check_split_ordering s elt =
-    let l, present, r = Set.split elt s in
-    match Set.compare l r, present with
-    | 0, false ->
+    let l, present, r = Set.split s elt in
+    match Set.compare_direct l r, present with
+    | 0, None ->
       (* splitting the empty set gives 2 empty sets, which will be equal *)
       Crowbar.check @@ Set.is_empty s
-    | 0, true ->
+    | 0, Some _ ->
       (* if the set contains only our element, split should represent that in
          neither l nor r, so we expect equal empty sets for l and r *)
-      Crowbar.check_eq ~cmp:Set.compare ~pp:pp_set s @@ Set.singleton elt
+      Crowbar.check_eq ~cmp:Set.compare_direct ~pp:pp_set s @@ Set.singleton (module Elt) elt
     | n, _ when n > 0 ->
       (* this should only ever happen when r is the empty set and l isn't *)
-      Crowbar.check_eq ~cmp:Set.compare ~pp:pp_set r Set.empty 
+      Crowbar.check_eq ~cmp:Set.compare_direct ~pp:pp_set r @@ Set.empty (module Elt)
     | n, _ ->
       Crowbar.check (n < 0)
 
   let check_split_element s elt =
-    let _l, present, _r = Set.split elt s in
-    Crowbar.check_eq present (Set.mem elt s)
+    let _l, present, _r = Set.split s elt in
+    match present with
+    | Some e -> Crowbar.check (Set.mem s e)
+    | None -> Crowbar.check (not @@ Set.mem s elt)
 
+  (* "echo"? *)
   let check_split_echo s elt =
-    let l, _present, r = Set.split elt s in
-    Crowbar.check_eq false (Set.mem elt l && Set.mem elt r)
+    let l, _present, r = Set.split s elt in
+    Crowbar.check_eq false (Set.mem l elt && Set.mem r elt)
 
+(* there is a choose, but no promises made about an equal set returning the same
+   element when choose is called. *)
   let check_choose s =
-    let s' = s in
-    try
-      Crowbar.check_eq ~cmp:Elt.compare ~pp:G.pp (Set.choose s) (Set.choose s')
-    with
-    | Not_found -> Crowbar.check (Set.is_empty s)
+    match Set.choose s with
+    | None -> Crowbar.check (Set.is_empty s)
+    | Some _ -> Crowbar.check (0 < Set.length s)
+
+  (* base gives us `invariants`, so use it! *)
+  let invariants_hold s = Crowbar.check (Set.invariants s)
 
   let add_tests () =
     Crowbar.add_test ~name:"Set.split strictly splits on the given element"
@@ -121,28 +102,17 @@ module Set_tester(Elt: Set.OrderedType) (G: Shims.GENERABLE with type t = Elt.t)
       Crowbar.[set] check_min_max;
     Crowbar.add_test ~name:"Set.add never results in a set with fewer elements"
       Crowbar.[set; G.gen] check_add_cardinality;
-    Crowbar.add_test ~name:"Set.add of an element present preserves physical \
-                            equality" Crowbar.[set; G.gen] check_add_equality;
-    Crowbar.add_test ~name:"Set.remove on set without that element preserves \
-                            physical equality" Crowbar.[set; G.gen]
-      check_remove_equality;
-    Crowbar.add_test ~name:"Set.map with identity function preserves physical \
-                            equality" Crowbar.[set] check_map_equality;
-    Crowbar.add_test ~name:"Set.filter with identity function preserves physical \
-                            equality" Crowbar.[set] check_filter_equality;
     Crowbar.add_test ~name:"Set.map represents f(x) for all items in the input \
                             set" Crowbar.[set] check_map;
-    Crowbar.add_test ~name:"Set.min_elt and max_elt are equal only for sets with \
-                            one element" Crowbar.[set]
-      max_min_implies_singleton;
-    Crowbar.add_test ~name:"Set.choose returns equal elements for equal sets"
-      Crowbar.[set] check_choose;
+    Crowbar.add_test ~name:"Set.choose returns consistent results for \
+                            empty/nonempty sets" Crowbar.[set] check_choose;
+    Crowbar.add_test ~name:"Set.invariants is true" Crowbar.[set] invariants_hold;
 
 end
 
 module UcharTester = Set_tester(Uchar)(Shims.Uchar)
 module NativeintTester = Set_tester(Nativeint)(Shims.Nativeint)
 module StringTester = Set_tester(String)(Shims.String)
-module IntTester = Set_tester(Shims.OrdInt)(Shims.Int)
+module IntTester = Set_tester(Int)(Shims.Int)
 module CharTester = Set_tester(Char)(Shims.Char)
-module FloatTester = Set_tester(Shims.OrdFloat)(Shims.Float)
+module FloatTester = Set_tester(Float)(Shims.Float)

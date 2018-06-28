@@ -11,13 +11,9 @@ module type GENERATOR = sig
   val value_transform : value -> value
 end
 
-module type Comparably_buildable = sig
-  type t
-  include Comparator.S with type t := t
-  val sexp_of_t : t -> Sexp.t
-end
-
-module Map_tester(KeyOrder: Comparably_buildable)(ValueOrder: Comparably_buildable)
+module Map_tester
+    (KeyOrder: Shims.Comparably_buildable)
+    (ValueOrder: Shims.Comparably_buildable)
     (G: GENERATOR with
       type key = KeyOrder.t and
       type value = ValueOrder.t

@@ -1,5 +1,11 @@
 open Base
 
+module type Comparably_buildable = sig
+  type t
+  include Comparator.S with type t := t
+  val sexp_of_t : t -> Sexp.t
+end
+
 module type GENERABLE = sig
   type t
   val gen : t Crowbar.gen
