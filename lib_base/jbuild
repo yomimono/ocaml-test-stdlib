@@ -2,5 +2,6 @@
 
 (library
  ((name stdlibtest)
- (libraries (crowbar fmt))
+ (modules (maps shims tests))
+ (libraries (base crowbar fmt))
  ))

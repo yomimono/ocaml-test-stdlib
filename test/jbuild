@@ -2,6 +2,7 @@
 
 (executable
  ((name basetests)
+  (public_name basetests)
   (libraries (crowbar fmt stdlibtest))
   (modules basetests)
   (modes (native))
@@ -19,7 +20,7 @@
   (action (run ${exe:alltests.exe}))))
 
 (alias
- ((name basetests)
+ ((name runbasetests)
   (action (run ${exe:basetests.exe}))))
 
 (alias

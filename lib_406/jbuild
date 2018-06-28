@@ -2,5 +2,5 @@
 
 (library
  ((name stdlibtest_406)
- (libraries (stdlibtest crowbar fmt))
+ (libraries (stdlibtest base crowbar fmt))
  ))
