@@ -9,7 +9,6 @@ env:
                 - OPAMYES=true
         matrix:
                 # docker hub (the ultimate source of the base images) doesn't allow + in names, hence the _
-                - OCAML_VERSION=4.04.0_afl
                 - OCAML_VERSION=4.05.0_afl
                 - OCAML_VERSION=4.06.0_afl
 
