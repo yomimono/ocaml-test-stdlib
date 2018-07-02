@@ -5,8 +5,8 @@ module type GENERATOR = sig
   type value
   val key_gen : key Crowbar.gen
   val val_gen : value Crowbar.gen
-  val pp_key : key Fmt.t (* TODO: should probably replace these with sexp calls? *)
-  val pp_value : value Fmt.t
+  val sexp_of_key: key -> Sexp.t
+  val sexp_of_value : value -> Sexp.t
   val key_transform : key -> key
   val value_transform : value -> value
 end
@@ -25,12 +25,11 @@ module Map_tester
   let pair : (G.key * G.value) Crowbar.gen
     = Crowbar.(map [G.key_gen; G.val_gen] (fun x y -> x, y))
 
-  let pp_map f m =
-    let pairsep = Fmt.(const string " -> ") in
-    let listsep = Fmt.(const string " | ") in
-    let pp_pairmap = Fmt.list ~sep:listsep
-        (Fmt.pair ~sep:pairsep G.pp_key G.pp_value) in
-    pp_pairmap f (Map.to_alist m)
+  let sexp_of_map = Map.sexp_of_m__t
+    (module struct type t = G.key let sexp_of_t = G.sexp_of_key end) G.sexp_of_value
+
+  let pp_map fmt m =
+    Sexp.pp fmt (sexp_of_map m)
 
   let largest val1 val2 =
     match ValueComparison.compare val1 val2 with
@@ -127,8 +126,8 @@ end
 module Make_generator(K: Shims.GENERABLE)(V: Shims.GENERABLE) = struct
   type key = K.t
   type value = V.t
-  let key_gen, pp_key = K.gen, K.pp
-  let val_gen, pp_value = V.gen, V.pp
+  let sexp_of_key, sexp_of_value = K.sexp_of_t, V.sexp_of_t
+  let key_gen, val_gen = K.gen, V.gen
   let key_transform, value_transform = K.transform, V.transform
 end
 

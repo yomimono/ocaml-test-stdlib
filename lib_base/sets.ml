@@ -7,9 +7,9 @@ module Set_tester(Elt: Shims.Comparably_buildable) (G: Shims.GENERABLE with type
   let all_in ~fn ~search ~source =
     Set.for_all ~f:(fun e -> Set.mem search (fn e)) source
 
-  let pp_set f s =
-    let pp_setlist = Fmt.list G.pp in
-    pp_setlist f (Set.elements s)
+  let sexp_of_set = Set.sexp_of_m__t (module Elt)
+
+  let pp_set f s = Sexp.pp f (sexp_of_set s)
 
   let rec set = lazy (Crowbar.(choose [
       const @@ Set.empty (module Elt);
