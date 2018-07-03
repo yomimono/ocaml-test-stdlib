@@ -3,7 +3,7 @@ language: c
 env:
         global:
                 - DISTRO=debian-9
-                - PACKAGE=ocaml-test-stdlib
+                - PACKAGE=ocaml-test-base
                 - INSTALL=false
                 - OPAMYES=true
         matrix:
