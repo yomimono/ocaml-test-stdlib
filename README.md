@@ -1,4 +1,4 @@
-[![travis CI build status badge](https://travis-ci.org/yomimono/ocaml-test-stdlib.svg?branch=primary)](https://travis-ci.org/yomimono/ocaml-test-stdlib/)
+[![travis CI build status badge](https://travis-ci.org/yomimono/ocaml-test-base.svg?branch=primary)](https://travis-ci.org/yomimono/ocaml-test-base/)
 
 # What is this?
 
@@ -12,7 +12,7 @@ A crash-free test run cannot comprehensively prove that each tested property is 
 
 ```
 $ cd ocaml-test-base/
-$ jbuilder build test/basetests.exe
+$ jbuilder build basetests.exe
 ```
 
 # How can I run these tests?
@@ -32,12 +32,9 @@ Crowbar tests have two modes:
 If you wish to use the quickcheck-like, fully random mode to run all tests distributed here, build the tests as above and then run the binary with no arguments.
 
 ```
-$ _build/default/test/basetests.exe | head -5
+$ _build/default/basetests.exe | head -1
 max_binding = min_binding implies all elements are equal: PASS
 
-removing a key that isn't bound preserves physical equality: PASS
-
-filtering which keeps all elements retains physical equality: PASS
 ```
 
 ## AFL mode the easy way
@@ -45,7 +42,7 @@ filtering which keeps all elements retains physical equality: PASS
 For convenience, there is an alias defined for fuzzing `basetests.exe` in `test/jbuild` using [bun](https://github.com/yomimono/ocaml-bun).  It is recommended to invoke this alias with `--no-buffer`, as otherwise the user gets no feedback while the tests are running (apart from fan noise!):
 
 ```
-jbuilder build @test/fuzz --no-buffer
+jbuilder build @fuzz --no-buffer
 ```
 
 Please note that when invoked in this way, the tests will attempt to use all available CPU cores.  To run the AFL tests in a more considerate manner, please see the next section.
@@ -57,7 +54,7 @@ To run the tests in AFL mode, you'll need to install American Fuzzy Lop. It's be
 Once `afl-fuzz` is available on your system, create an `input` directory with a non-empty file in it (or use `test/input`, conveniently provided in this repository), and an `output` directory for `afl-fuzz` to store its findings:
 
 ```
-afl-fuzz -i test/input -o output _build/default/test/basetests.exe @@
+afl-fuzz -i test/input -o output _build/default/basetests.exe @@
 ```
 
 This will launch AFL, which will generate new test cases and track the exploration of the state space.  When inputs are discovered which cause a property not to hold, they will be reported as crashes (along with actual crashes, although in the OCaml standard library these are rare).  See the [afl-fuzz documentation](https://lcamtuf.coredump.cx/afl/status_screen.txt) for more on AFL's excellent interface.
@@ -67,5 +64,3 @@ This will launch AFL, which will generate new test cases and track the explorati
 Currently, the Map and Set modules have tests which borrow from the [ocaml-test-stdlib](https://github.com/yomimono/ocaml-test-stdlib) tests for generating those data structures.  These tests use Base's provided `invariants` function to check whether the arbitrary data structure generated using Base's API (driven by AFL and Crowbar) is valid.
 
 These tests use several modules from Base as key/value (for Map) or element (for Set) data types.  Int, Float, String, Char, Nativeint, and Uchar are all potential candidates for Map keys or values, as well as Set elements.  Tests for all of these modules (although not all combinations for Map keys and values) are generated, and have an equal chance of being chosen for execution.
-
-To see the tests themselves, have a look at `test_maps.ml` and `test_sets.ml` in the `tests/` directory.

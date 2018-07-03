@@ -3,24 +3,12 @@
 (executable
  ((name basetests)
   (public_name basetests)
-  (libraries (crowbar stdlibtest))
-  (modules basetests)
+  (libraries (base crowbar))
   (modes (native))
  ))
 
-(executable
- ((name alltests)
-  (libraries (crowbar fmt stdlibtest stdlibtest_406))
-  (modules (alltests))
-  (modes (native))
-  ))
-
 (alias
  ((name runtest)
-  (action (run ${exe:alltests.exe}))))
-
-(alias
- ((name runbasetests)
   (action (run ${exe:basetests.exe}))))
 
 (alias
