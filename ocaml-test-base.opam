@@ -8,11 +8,10 @@ license: "MIT"
 build:
 [[ "jbuilder" "build" "-j" jobs "@install" ]]
 run-test:
-[[ "jbuilder" "build" "-j" jobs "@test/fuzz" "--no-buffer" ]]
+[[ "jbuilder" "build" "-j" jobs "@fuzz" "--no-buffer" ]]
 depends: [
-  "ocamlfind"
-  "jbuilder" {build}
-  "bun"
-  "crowbar"
   "base"
+  "crowbar"
+  "jbuilder" {build}
+  "bun" {test}
 ]
