@@ -2,11 +2,18 @@
 
 # What is this?
 
-This repository contains property-based tests of a subset of the [OCaml](https://ocaml.org) standard library.  The tests use the [crowbar](https://github.com/stedolan/crowbar) framework and are intended for use with the [American Fuzzy Lop](https://lcamtuf.coredump.cx/afl) program fuzzer.
+This repository contains property-based tests of a subset of the [Base](https://github.com/janestreet/base) standard library replacement for [OCaml](https://ocaml.org).  The tests use the [crowbar](https://github.com/stedolan/crowbar) framework and are intended for use with the [American Fuzzy Lop](https://lcamtuf.coredump.cx/afl) program fuzzer.
 
 # What are these tests for?
 
 A crash-free test run cannot comprehensively prove that each tested property is strictly true, and these tests are not a substitute for proof or verification work.  However, these tests *can* easily be run against the actual implementations used by OCaml programmers, can be run unattended, and are easily adaptable over a wide range of input.  Violations of a property (reported by afl-fuzz as crashes) are counterexamples which can be used to fix bugs, create regression tests, and generally help developers improve the quality of software.
+
+# How can I build these tests?
+
+```
+$ cd ocaml-test-base/
+$ jbuilder build test/basetests.exe
+```
 
 # How can I run these tests?
 
@@ -18,22 +25,14 @@ Crowbar tests have two modes:
 ## Universal Requirements
 
 * use an OCaml compiler with afl instrumentation enabled by default (any compiler with `+afl` from `opam`), for convenience.
-* install [crowbar](https://github.com/stedolan/crowbar).  The package has not yet been released in `opam-repository` but does have an `opam` file, so pinning it should result in a successful installation (e.g. `opam pin add crowbar https://github.com/stedolan/crowbar`).
-
-### Building tests
-
-```
-$ cd ocaml-test-stdlib/
-$ jbuilder build test/alltests.exe #if your compiler is 4.06.0
-$ jbuilder build test/basetests.exe #if your compiler is 4.04.* or 4.05.*
-```
+* install [crowbar](https://github.com/stedolan/crowbar) and [base](https://github.com/janestreet/base).  Both are available via the `opam` package manager.
 
 ## fully random test mode
 
 If you wish to use the quickcheck-like, fully random mode to run all tests distributed here, build the tests as above and then run the binary with no arguments.
 
 ```
-$ _build/default/test/basetests.exe | head -5 #substitute alltests for basetests on 4.06.0
+$ _build/default/test/basetests.exe | head -5
 max_binding = min_binding implies all elements are equal: PASS
 
 removing a key that isn't bound preserves physical equality: PASS
@@ -41,9 +40,19 @@ removing a key that isn't bound preserves physical equality: PASS
 filtering which keeps all elements retains physical equality: PASS
 ```
 
-### AFL mode requirements
+## AFL mode the easy way
 
-To run the tests in AFL mode, you'll need to install American Fuzzy Lop ([latest source tarball](http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz), although your distribution may also have a package available).
+For convenience, there is an alias defined for fuzzing `basetests.exe` in `test/jbuild` using [bun](https://github.com/yomimono/ocaml-bun).  It is recommended to invoke this alias with `--no-buffer`, as otherwise the user gets no feedback while the tests are running (apart from fan noise!):
+
+```
+jbuilder build @test/fuzz --no-buffer
+```
+
+Please note that when invoked in this way, the tests will attempt to use all available CPU cores.  To run the AFL tests in a more considerate manner, please see the next section.
+
+## AFL by hand
+
+To run the tests in AFL mode, you'll need to install American Fuzzy Lop. It's best to use a version more recent than many distributions make available via their own package managers. You can get AFL directly from the [latest source tarball](http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz) or via `opam`, where the package `afl` is available.
 
 Once `afl-fuzz` is available on your system, create an `input` directory with a non-empty file in it (or use `test/input`, conveniently provided in this repository), and an `output` directory for `afl-fuzz` to store its findings:
 
@@ -53,78 +62,10 @@ afl-fuzz -i test/input -o output _build/default/test/basetests.exe @@
 
 This will launch AFL, which will generate new test cases and track the exploration of the state space.  When inputs are discovered which cause a property not to hold, they will be reported as crashes (along with actual crashes, although in the OCaml standard library these are rare).  See the [afl-fuzz documentation](https://lcamtuf.coredump.cx/afl/status_screen.txt) for more on AFL's excellent interface.
 
-For convenience, there is an alias defined for fuzzing `basetests.exe` in `test/jbuild`.  It is recommended to invoke this alias with `--no-buffer`, as otherwise the user gets no feedback while the tests are running (apart from fan noise!):
+# What tests are here?
 
-```
-jbuilder build @test/fuzz --no-buffer
-```
+Currently, the Map and Set modules have tests which borrow from the [ocaml-test-stdlib](https://github.com/yomimono/ocaml-test-stdlib) tests for generating those data structures.  These tests use Base's provided `invariants` function to check whether the arbitrary data structure generated using Base's API (driven by AFL and Crowbar) is valid.
 
-### Whales
-
-A Dockerfile is included for the convenience of users who enjoy running `docker` commands.  It uses [ocaml-bun](https://github.com/yomimono/ocaml-bun) to launch and manage the appropriate number of `afl-fuzz` invocations.
-
-## What tests are here?
-
-Currently, the Map and Set functors have a nontrivial number of tests; Map has more tests than Set.
-
-These tests use several modules from the standard library as inputs for the Make functors of Map and Set.  Int, String, Char, Nativeint, and Uchar are all potential candidates for Map keys or values, as well as Set elements.  Tests for all of these modules (although not all combinations for Map keys and values) are generated, and have an equal chance of being chosen for execution.
+These tests use several modules from Base as key/value (for Map) or element (for Set) data types.  Int, Float, String, Char, Nativeint, and Uchar are all potential candidates for Map keys or values, as well as Set elements.  Tests for all of these modules (although not all combinations for Map keys and values) are generated, and have an equal chance of being chosen for execution.
 
 To see the tests themselves, have a look at `test_maps.ml` and `test_sets.ml` in the `tests/` directory.
-
-# Have you found any bugs?
-
-Not in 4.05 or 4.06!  When run against 4.04.0, known problems with the Set module (fixed in 4.04.1) are discovered by these tests.
-
-## How hard are you looking?
-
-As of commit `4018c4`, no bugs in OCaml 4.06.0+beta2 had been found (although a test run is likely in progress this very moment).
-
-To get a better idea of what that means, here's how the test run in progress at the time of this document's writing was faring on a machine with 7 cores available.  Five of the fuzzer processes have determined there is no more interesting work for them to do and closed down, while two still think there are interesting paths to explore:
-
-```
-Individual fuzzers
-==================
-
->>> 1 (0 days, 2 hrs) <<<
-
-  cycle 1, lifetime speed 928 execs/sec, path 2241/2910 (77%)
-  pending 9/2676, coverage 3.02%, no crashes yet
-
->>> 2 (0 days, 2 hrs) <<<
-
-  Instance is dead or running remotely, skipping.
-
->>> 3 (0 days, 2 hrs) <<<
-
-  cycle 37, lifetime speed 4128 execs/sec, path 3191/4313 (73%)
-  pending 0/9, coverage 3.02%, no crashes yet
-
->>> 4 (0 days, 2 hrs) <<<
-
-  Instance is dead or running remotely, skipping.
-
->>> 5 (0 days, 2 hrs) <<<
-
-  Instance is dead or running remotely, skipping.
-
->>> 6 (0 days, 2 hrs) <<<
-
-  Instance is dead or running remotely, skipping.
-
->>> 7 (0 days, 2 hrs) <<<
-
-  Instance is dead or running remotely, skipping.
-
-Summary stats
-=============
-
-       Fuzzers alive : 2
-      Dead or remote : 5 (excluded from stats)
-      Total run time : 0 days, 4 hours
-         Total execs : 36 million
-    Cumulative speed : 5056 execs/sec
-       Pending paths : 9 faves, 2685 total
-  Pending per fuzzer : 4 faves, 1342 total (on average)
-       Crashes found : 0 locally unique
-
-```
