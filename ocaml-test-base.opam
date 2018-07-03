@@ -13,5 +13,5 @@ depends: [
   "base"
   "crowbar"
   "jbuilder" {build}
-  "bun" {test}
+  "bun"
 ]
