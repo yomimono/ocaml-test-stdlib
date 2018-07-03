@@ -8,6 +8,8 @@ env:
                 - OPAMYES=true
         matrix:
                 - OCAML_VERSION=4.06.1+afl
+                - OCAML_VERSION=4.07.0+rc2+afl
+                - OCAML_VERSION=4.07.0+trunk+afl
 
 before_install:
 - sudo sysctl kernel.core_pattern=core
