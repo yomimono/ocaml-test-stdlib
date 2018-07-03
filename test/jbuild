@@ -3,7 +3,7 @@
 (executable
  ((name basetests)
   (public_name basetests)
-  (libraries (crowbar fmt stdlibtest))
+  (libraries (crowbar stdlibtest))
   (modules basetests)
   (modes (native))
  ))
