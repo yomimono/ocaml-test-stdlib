@@ -24,8 +24,8 @@ module Set_tester(Elt: Shims.Comparably_buildable) (G: Shims.GENERABLE with type
       map [(unlazy set)] (fun s -> Set.filter s ~f:(fun _ -> true));
       map [(unlazy set)] (fun s -> Set.partition_tf s ~f:(fun _ -> true) |> fst);
       map [G.gen; (unlazy set)] ((fun e s ->
-          let l, _, r = Set.split s e  in
-          Set.union l r));
+          let l, _, _ = Set.split s e  in
+          l));
     ]))
 
   let lazy set = set
