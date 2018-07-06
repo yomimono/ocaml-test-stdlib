@@ -6,7 +6,10 @@ env:
                 - PACKAGE=ocaml-test-base
                 - INSTALL=false
                 - OPAMYES=true
-                - PINS="base" #needed for any OCAML_VERSION > 4.06, so use it unilaterally
+                - PINS="base bun:https://github.com/yomimono/ocaml-bun.git#always-output"
+                  #pinned base is needed for any OCAML_VERSION > 4.06, so use it unilaterally
+                  #bun pin is a fix for a race condition where we might not output if both fuzzers
+                  #terminate close to simultaneously; version 0.3.3 should contain a fix
         matrix:
                 - OCAML_VERSION=4.06.1+afl
                 - OCAML_VERSION=4.07.0+rc2+afl
