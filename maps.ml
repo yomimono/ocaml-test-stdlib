@@ -109,10 +109,6 @@ module Map_tester
     | None, None -> map_eq map @@ Map.empty (module KeyOrder)
     | Some _, None | None, Some _ -> Crowbar.fail "max_elt and min_elt disagree on whether the map is empty"
 
-(* Base conveniently gives us a few functions that let us directly test whether the underlying data structure
-   still preserves its invariants, which we used the tests here to get at for the stdlib map tests.
-   Probably the thing to do here is to use these functions directly on maps we've mangled in various ways. *)
-
   let check_invariants map = Crowbar.check @@ Map.invariants map
 
   let add_tests () =
@@ -131,16 +127,6 @@ module Make_generator(K: Shims.GENERABLE)(V: Shims.GENERABLE) = struct
   let key_transform, value_transform = K.transform, V.transform
 end
 
-(* we have a bit of disagreement between the modules available and the shims we've written.
-
-   our Map_tester now wants something Comparably_buildable for the key and value, and 
-   a GENERATOR whose key and value agree with the `t`s provided by the first two module
-   arguments.
-
-   some modules will be directly usable as Comparably_buildable things -- Int64, String.
-   For those things we still need to make the generator (and use the shim for the module in lib_base/shims.ml),
-   because we still need to make the generators ourselves.
-   *)
 module StringString = Make_generator(Shims.String)(Shims.String)
 module IntString = Make_generator(Shims.Int)(Shims.String)
 module FloatString = Make_generator(Shims.Float)(Shims.String)
