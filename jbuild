@@ -16,7 +16,7 @@
   (deps (basetests.exe (files_recursively_in input)))
   (action (run 
     "timeout" "--preserve-status" "25m"
-    "bun" "-v"
+    "bun" "-vv"
     "--input=input"
     "--output=output"
     "--" ./basetests.exe))))
