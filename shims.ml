@@ -51,9 +51,9 @@ module Uchar = struct
   let gen = Crowbar.(map [int32] (fun n ->
     let n = Int32.to_int_exn n land 0x1FFFFF in
     Uchar.of_scalar n |> nonetheless))
-  let transform n =
-    try Uchar.succ_exn n
-    with Invalid_argument _ -> Uchar.pred_exn n
+  let transform c =
+    match Uchar.succ c with Some s -> s | None ->
+      match Uchar.pred c with Some p -> p | None -> c
 end
 module Float = struct
   type t = Float.t
